@@ -1,0 +1,105 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+model User {
+
+  id        Int      @id @default(autoincrement())
+  clerkId   String   @unique  // Clerk user ID (e.g., "user_2NNEqL2nrIRdJ194ndJqAHwEfxC")
+  email     String   @unique
+  firstName String?
+  lastName  String?
+  imageUrl  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([clerkId])  // Critical for webhook lookups
+  @@index([email])
+
+  repos      Repo[]
+  chats      Chat[]
+}
+
+model Repo {
+  id          String   @id @default(cuid())
+
+  userId      Int
+  githubRepoId String?
+  owner       String
+  name        String
+
+  indexedAt   DateTime?
+  createdAt   DateTime @default(now())
+
+  user        User @relation(fields: [userId], references: [id])
+  repositoryIndex RepositoryIndex? 
+  codeChunks CodeChunk[]
+
+  chats       Chat[]
+}
+
+model Chat {
+  id          String   @id @default(cuid())
+
+  userId      Int
+  repoId      String?
+
+  title       String?
+  createdAt   DateTime @default(now())
+
+  user        User @relation(fields: [userId], references: [id])
+  repo        Repo? @relation(fields: [repoId], references: [id])
+
+  messages    Message[]
+}
+
+model Message {
+  id          String   @id @default(cuid())
+
+  chatId      String
+
+  role        String   // user, assistant
+  content     String   @db.Text
+
+  createdAt   DateTime @default(now())
+
+  chat        Chat @relation(fields: [chatId], references: [id])
+}
+
+model RepositoryIndex {
+  id            String @id @default(cuid())
+
+  repoId         String @unique
+
+  totalFiles     Int
+  totalChunks    Int
+
+  lastIndexedAt  DateTime
+
+  repo           Repo @relation(fields: [repoId], references: [id])
+}
+
+model CodeChunk {
+  id          String @id @default(cuid())
+
+  repoId      String 
+
+  filePath    String
+  chunkText   String @db.Text
+
+  startLine   Int?
+  endLine     Int?
+
+  embeddingId String?
+
+  repo        Repo @relation(fields: [repoId], references: [id])
+}

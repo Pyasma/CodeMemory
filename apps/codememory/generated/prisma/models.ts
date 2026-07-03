@@ -10,8 +10,7 @@
  */
 export type * from './models/User'
 export type * from './models/Repo'
+export type * from './models/Commit'
 export type * from './models/Chat'
 export type * from './models/Message'
-export type * from './models/RepositoryIndex'
-export type * from './models/CodeChunk'
 export type * from './commonInputTypes'

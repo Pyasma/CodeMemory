@@ -2,7 +2,7 @@ export default async function Home() {
   
   return (
     <div>
-      Hello World
+      Landing Page
     </div>
   );
 }

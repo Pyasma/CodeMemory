@@ -5,12 +5,20 @@
 
 generator client {
   provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  output   = "../generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
 }
+
+enum RepoStatus {
+  PENDING
+  INDEXING
+  READY
+  FAILED
+}
+
 model User {
 
   id        Int      @id @default(autoincrement())
@@ -26,40 +34,66 @@ model User {
   @@index([email])
 
   repos      Repo[]
-  chats      Chat[]
 }
 
 model Repo {
   id          String   @id @default(cuid())
 
   userId      Int
+
   githubRepoId String?
+  githubUrl     String
   owner       String
   name        String
 
+  totalFiles    Int @default(0)
+  totalCommits   Int @default(0)
+  
+
   indexedAt   DateTime?
   createdAt   DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   user        User @relation(fields: [userId], references: [id])
-  repositoryIndex RepositoryIndex? 
-  codeChunks CodeChunk[]
 
+  commits       Commit[]
   chats       Chat[]
+}
+
+model Commit {
+  id            String   @id @default(cuid())
+
+  repoId        String
+
+  sha           String   @unique
+  message       String
+
+  authorName    String?
+
+  committedAt   DateTime
+
+  summary       String? @db.Text
+
+  repo          Repo @relation(fields: [repoId], references: [id])
+
+  @@index([repoId])
+  @@index([sha])
 }
 
 model Chat {
   id          String   @id @default(cuid())
 
-  userId      Int
-  repoId      String?
+  repoId      String
 
   title       String?
   createdAt   DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  user        User @relation(fields: [userId], references: [id])
   repo        Repo? @relation(fields: [repoId], references: [id])
 
   messages    Message[]
+
+  @@index([repoId])
 }
 
 model Message {
@@ -73,33 +107,7 @@ model Message {
   createdAt   DateTime @default(now())
 
   chat        Chat @relation(fields: [chatId], references: [id])
+
+  @@index([chatId])
 }
 
-model RepositoryIndex {
-  id            String @id @default(cuid())
-
-  repoId         String @unique
-
-  totalFiles     Int
-  totalChunks    Int
-
-  lastIndexedAt  DateTime
-
-  repo           Repo @relation(fields: [repoId], references: [id])
-}
-
-model CodeChunk {
-  id          String @id @default(cuid())
-
-  repoId      String 
-
-  filePath    String
-  chunkText   String @db.Text
-
-  startLine   Int?
-  endLine     Int?
-
-  embeddingId String?
-
-  repo        Repo @relation(fields: [repoId], references: [id])
-}

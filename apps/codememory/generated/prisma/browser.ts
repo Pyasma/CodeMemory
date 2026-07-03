@@ -28,6 +28,11 @@ export type User = Prisma.UserModel
  */
 export type Repo = Prisma.RepoModel
 /**
+ * Model Commit
+ * 
+ */
+export type Commit = Prisma.CommitModel
+/**
  * Model Chat
  * 
  */
@@ -37,13 +42,3 @@ export type Chat = Prisma.ChatModel
  * 
  */
 export type Message = Prisma.MessageModel
-/**
- * Model RepositoryIndex
- * 
- */
-export type RepositoryIndex = Prisma.RepositoryIndexModel
-/**
- * Model CodeChunk
- * 
- */
-export type CodeChunk = Prisma.CodeChunkModel

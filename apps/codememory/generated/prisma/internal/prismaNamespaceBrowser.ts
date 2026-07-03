@@ -53,10 +53,9 @@ export const AnyNull = runtime.AnyNull
 export const ModelName = {
   User: 'User',
   Repo: 'Repo',
+  Commit: 'Commit',
   Chat: 'Chat',
-  Message: 'Message',
-  RepositoryIndex: 'RepositoryIndex',
-  CodeChunk: 'CodeChunk'
+  Message: 'Message'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -79,7 +78,9 @@ export const UserScalarFieldEnum = {
   id: 'id',
   clerkId: 'clerkId',
   email: 'email',
-  name: 'name',
+  firstName: 'firstName',
+  lastName: 'lastName',
+  imageUrl: 'imageUrl',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -91,21 +92,38 @@ export const RepoScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
   githubRepoId: 'githubRepoId',
+  githubUrl: 'githubUrl',
   owner: 'owner',
   name: 'name',
+  totalFiles: 'totalFiles',
+  totalCommits: 'totalCommits',
   indexedAt: 'indexedAt',
-  createdAt: 'createdAt'
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
 } as const
 
 export type RepoScalarFieldEnum = (typeof RepoScalarFieldEnum)[keyof typeof RepoScalarFieldEnum]
 
 
+export const CommitScalarFieldEnum = {
+  id: 'id',
+  repoId: 'repoId',
+  sha: 'sha',
+  message: 'message',
+  authorName: 'authorName',
+  committedAt: 'committedAt',
+  summary: 'summary'
+} as const
+
+export type CommitScalarFieldEnum = (typeof CommitScalarFieldEnum)[keyof typeof CommitScalarFieldEnum]
+
+
 export const ChatScalarFieldEnum = {
   id: 'id',
-  userId: 'userId',
   repoId: 'repoId',
   title: 'title',
-  createdAt: 'createdAt'
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
 } as const
 
 export type ChatScalarFieldEnum = (typeof ChatScalarFieldEnum)[keyof typeof ChatScalarFieldEnum]
@@ -120,30 +138,6 @@ export const MessageScalarFieldEnum = {
 } as const
 
 export type MessageScalarFieldEnum = (typeof MessageScalarFieldEnum)[keyof typeof MessageScalarFieldEnum]
-
-
-export const RepositoryIndexScalarFieldEnum = {
-  id: 'id',
-  repoId: 'repoId',
-  totalFiles: 'totalFiles',
-  totalChunks: 'totalChunks',
-  lastIndexedAt: 'lastIndexedAt'
-} as const
-
-export type RepositoryIndexScalarFieldEnum = (typeof RepositoryIndexScalarFieldEnum)[keyof typeof RepositoryIndexScalarFieldEnum]
-
-
-export const CodeChunkScalarFieldEnum = {
-  id: 'id',
-  repoId: 'repoId',
-  filePath: 'filePath',
-  chunkText: 'chunkText',
-  startLine: 'startLine',
-  endLine: 'endLine',
-  embeddingId: 'embeddingId'
-} as const
-
-export type CodeChunkScalarFieldEnum = (typeof CodeChunkScalarFieldEnum)[keyof typeof CodeChunkScalarFieldEnum]
 
 
 export const SortOrder = {

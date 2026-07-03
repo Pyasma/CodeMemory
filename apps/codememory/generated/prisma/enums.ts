@@ -9,7 +9,11 @@
 * 🟢 You can import this file directly.
 */
 
+export const RepoStatus = {
+  PENDING: 'PENDING',
+  INDEXING: 'INDEXING',
+  READY: 'READY',
+  FAILED: 'FAILED'
+} as const
 
-
-// This file is empty because there are no enums in the schema.
-export {}
+export type RepoStatus = (typeof RepoStatus)[keyof typeof RepoStatus]

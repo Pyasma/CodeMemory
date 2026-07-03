@@ -386,10 +386,9 @@ type FieldRefInputType<Model, FieldType> = Model extends never ? never : FieldRe
 export const ModelName = {
   User: 'User',
   Repo: 'Repo',
+  Commit: 'Commit',
   Chat: 'Chat',
-  Message: 'Message',
-  RepositoryIndex: 'RepositoryIndex',
-  CodeChunk: 'CodeChunk'
+  Message: 'Message'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -405,7 +404,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "repo" | "chat" | "message" | "repositoryIndex" | "codeChunk"
+    modelProps: "user" | "repo" | "commit" | "chat" | "message"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -557,6 +556,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    Commit: {
+      payload: Prisma.$CommitPayload<ExtArgs>
+      fields: Prisma.CommitFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.CommitFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CommitPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.CommitFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CommitPayload>
+        }
+        findFirst: {
+          args: Prisma.CommitFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CommitPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.CommitFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CommitPayload>
+        }
+        findMany: {
+          args: Prisma.CommitFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CommitPayload>[]
+        }
+        create: {
+          args: Prisma.CommitCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CommitPayload>
+        }
+        createMany: {
+          args: Prisma.CommitCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.CommitCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CommitPayload>[]
+        }
+        delete: {
+          args: Prisma.CommitDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CommitPayload>
+        }
+        update: {
+          args: Prisma.CommitUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CommitPayload>
+        }
+        deleteMany: {
+          args: Prisma.CommitDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.CommitUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.CommitUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CommitPayload>[]
+        }
+        upsert: {
+          args: Prisma.CommitUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CommitPayload>
+        }
+        aggregate: {
+          args: Prisma.CommitAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateCommit>
+        }
+        groupBy: {
+          args: Prisma.CommitGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CommitGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.CommitCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CommitCountAggregateOutputType> | number
+        }
+      }
+    }
     Chat: {
       payload: Prisma.$ChatPayload<ExtArgs>
       fields: Prisma.ChatFieldRefs
@@ -705,154 +778,6 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
-    RepositoryIndex: {
-      payload: Prisma.$RepositoryIndexPayload<ExtArgs>
-      fields: Prisma.RepositoryIndexFieldRefs
-      operations: {
-        findUnique: {
-          args: Prisma.RepositoryIndexFindUniqueArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$RepositoryIndexPayload> | null
-        }
-        findUniqueOrThrow: {
-          args: Prisma.RepositoryIndexFindUniqueOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$RepositoryIndexPayload>
-        }
-        findFirst: {
-          args: Prisma.RepositoryIndexFindFirstArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$RepositoryIndexPayload> | null
-        }
-        findFirstOrThrow: {
-          args: Prisma.RepositoryIndexFindFirstOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$RepositoryIndexPayload>
-        }
-        findMany: {
-          args: Prisma.RepositoryIndexFindManyArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$RepositoryIndexPayload>[]
-        }
-        create: {
-          args: Prisma.RepositoryIndexCreateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$RepositoryIndexPayload>
-        }
-        createMany: {
-          args: Prisma.RepositoryIndexCreateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        createManyAndReturn: {
-          args: Prisma.RepositoryIndexCreateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$RepositoryIndexPayload>[]
-        }
-        delete: {
-          args: Prisma.RepositoryIndexDeleteArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$RepositoryIndexPayload>
-        }
-        update: {
-          args: Prisma.RepositoryIndexUpdateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$RepositoryIndexPayload>
-        }
-        deleteMany: {
-          args: Prisma.RepositoryIndexDeleteManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateMany: {
-          args: Prisma.RepositoryIndexUpdateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateManyAndReturn: {
-          args: Prisma.RepositoryIndexUpdateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$RepositoryIndexPayload>[]
-        }
-        upsert: {
-          args: Prisma.RepositoryIndexUpsertArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$RepositoryIndexPayload>
-        }
-        aggregate: {
-          args: Prisma.RepositoryIndexAggregateArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.AggregateRepositoryIndex>
-        }
-        groupBy: {
-          args: Prisma.RepositoryIndexGroupByArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.RepositoryIndexGroupByOutputType>[]
-        }
-        count: {
-          args: Prisma.RepositoryIndexCountArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.RepositoryIndexCountAggregateOutputType> | number
-        }
-      }
-    }
-    CodeChunk: {
-      payload: Prisma.$CodeChunkPayload<ExtArgs>
-      fields: Prisma.CodeChunkFieldRefs
-      operations: {
-        findUnique: {
-          args: Prisma.CodeChunkFindUniqueArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$CodeChunkPayload> | null
-        }
-        findUniqueOrThrow: {
-          args: Prisma.CodeChunkFindUniqueOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$CodeChunkPayload>
-        }
-        findFirst: {
-          args: Prisma.CodeChunkFindFirstArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$CodeChunkPayload> | null
-        }
-        findFirstOrThrow: {
-          args: Prisma.CodeChunkFindFirstOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$CodeChunkPayload>
-        }
-        findMany: {
-          args: Prisma.CodeChunkFindManyArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$CodeChunkPayload>[]
-        }
-        create: {
-          args: Prisma.CodeChunkCreateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$CodeChunkPayload>
-        }
-        createMany: {
-          args: Prisma.CodeChunkCreateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        createManyAndReturn: {
-          args: Prisma.CodeChunkCreateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$CodeChunkPayload>[]
-        }
-        delete: {
-          args: Prisma.CodeChunkDeleteArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$CodeChunkPayload>
-        }
-        update: {
-          args: Prisma.CodeChunkUpdateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$CodeChunkPayload>
-        }
-        deleteMany: {
-          args: Prisma.CodeChunkDeleteManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateMany: {
-          args: Prisma.CodeChunkUpdateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateManyAndReturn: {
-          args: Prisma.CodeChunkUpdateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$CodeChunkPayload>[]
-        }
-        upsert: {
-          args: Prisma.CodeChunkUpsertArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$CodeChunkPayload>
-        }
-        aggregate: {
-          args: Prisma.CodeChunkAggregateArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.AggregateCodeChunk>
-        }
-        groupBy: {
-          args: Prisma.CodeChunkGroupByArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.CodeChunkGroupByOutputType>[]
-        }
-        count: {
-          args: Prisma.CodeChunkCountArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.CodeChunkCountAggregateOutputType> | number
-        }
-      }
-    }
   }
 } & {
   other: {
@@ -896,7 +821,9 @@ export const UserScalarFieldEnum = {
   id: 'id',
   clerkId: 'clerkId',
   email: 'email',
-  name: 'name',
+  firstName: 'firstName',
+  lastName: 'lastName',
+  imageUrl: 'imageUrl',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -908,21 +835,38 @@ export const RepoScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
   githubRepoId: 'githubRepoId',
+  githubUrl: 'githubUrl',
   owner: 'owner',
   name: 'name',
+  totalFiles: 'totalFiles',
+  totalCommits: 'totalCommits',
   indexedAt: 'indexedAt',
-  createdAt: 'createdAt'
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
 } as const
 
 export type RepoScalarFieldEnum = (typeof RepoScalarFieldEnum)[keyof typeof RepoScalarFieldEnum]
 
 
+export const CommitScalarFieldEnum = {
+  id: 'id',
+  repoId: 'repoId',
+  sha: 'sha',
+  message: 'message',
+  authorName: 'authorName',
+  committedAt: 'committedAt',
+  summary: 'summary'
+} as const
+
+export type CommitScalarFieldEnum = (typeof CommitScalarFieldEnum)[keyof typeof CommitScalarFieldEnum]
+
+
 export const ChatScalarFieldEnum = {
   id: 'id',
-  userId: 'userId',
   repoId: 'repoId',
   title: 'title',
-  createdAt: 'createdAt'
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
 } as const
 
 export type ChatScalarFieldEnum = (typeof ChatScalarFieldEnum)[keyof typeof ChatScalarFieldEnum]
@@ -937,30 +881,6 @@ export const MessageScalarFieldEnum = {
 } as const
 
 export type MessageScalarFieldEnum = (typeof MessageScalarFieldEnum)[keyof typeof MessageScalarFieldEnum]
-
-
-export const RepositoryIndexScalarFieldEnum = {
-  id: 'id',
-  repoId: 'repoId',
-  totalFiles: 'totalFiles',
-  totalChunks: 'totalChunks',
-  lastIndexedAt: 'lastIndexedAt'
-} as const
-
-export type RepositoryIndexScalarFieldEnum = (typeof RepositoryIndexScalarFieldEnum)[keyof typeof RepositoryIndexScalarFieldEnum]
-
-
-export const CodeChunkScalarFieldEnum = {
-  id: 'id',
-  repoId: 'repoId',
-  filePath: 'filePath',
-  chunkText: 'chunkText',
-  startLine: 'startLine',
-  endLine: 'endLine',
-  embeddingId: 'embeddingId'
-} as const
-
-export type CodeChunkScalarFieldEnum = (typeof CodeChunkScalarFieldEnum)[keyof typeof CodeChunkScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -994,6 +914,20 @@ export type NullsOrder = (typeof NullsOrder)[keyof typeof NullsOrder]
 
 
 /**
+ * Reference to a field of type 'Int'
+ */
+export type IntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int'>
+    
+
+
+/**
+ * Reference to a field of type 'Int[]'
+ */
+export type ListIntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int[]'>
+    
+
+
+/**
  * Reference to a field of type 'String'
  */
 export type StringFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'String'>
@@ -1018,20 +952,6 @@ export type DateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel
  * Reference to a field of type 'DateTime[]'
  */
 export type ListDateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DateTime[]'>
-    
-
-
-/**
- * Reference to a field of type 'Int'
- */
-export type IntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int'>
-    
-
-
-/**
- * Reference to a field of type 'Int[]'
- */
-export type ListIntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int[]'>
     
 
 
@@ -1160,10 +1080,9 @@ export type PrismaClientOptions = ({
 export type GlobalOmitConfig = {
   user?: Prisma.UserOmit
   repo?: Prisma.RepoOmit
+  commit?: Prisma.CommitOmit
   chat?: Prisma.ChatOmit
   message?: Prisma.MessageOmit
-  repositoryIndex?: Prisma.RepositoryIndexOmit
-  codeChunk?: Prisma.CodeChunkOmit
 }
 
 /* Types for Logging */

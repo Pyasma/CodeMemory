@@ -20,70 +20,120 @@ export type RepoModel = runtime.Types.Result.DefaultSelection<Prisma.$RepoPayloa
 
 export type AggregateRepo = {
   _count: RepoCountAggregateOutputType | null
+  _avg: RepoAvgAggregateOutputType | null
+  _sum: RepoSumAggregateOutputType | null
   _min: RepoMinAggregateOutputType | null
   _max: RepoMaxAggregateOutputType | null
 }
 
+export type RepoAvgAggregateOutputType = {
+  userId: number | null
+  totalFiles: number | null
+  totalCommits: number | null
+}
+
+export type RepoSumAggregateOutputType = {
+  userId: number | null
+  totalFiles: number | null
+  totalCommits: number | null
+}
+
 export type RepoMinAggregateOutputType = {
   id: string | null
-  userId: string | null
+  userId: number | null
   githubRepoId: string | null
+  githubUrl: string | null
   owner: string | null
   name: string | null
+  totalFiles: number | null
+  totalCommits: number | null
   indexedAt: Date | null
   createdAt: Date | null
+  updatedAt: Date | null
 }
 
 export type RepoMaxAggregateOutputType = {
   id: string | null
-  userId: string | null
+  userId: number | null
   githubRepoId: string | null
+  githubUrl: string | null
   owner: string | null
   name: string | null
+  totalFiles: number | null
+  totalCommits: number | null
   indexedAt: Date | null
   createdAt: Date | null
+  updatedAt: Date | null
 }
 
 export type RepoCountAggregateOutputType = {
   id: number
   userId: number
   githubRepoId: number
+  githubUrl: number
   owner: number
   name: number
+  totalFiles: number
+  totalCommits: number
   indexedAt: number
   createdAt: number
+  updatedAt: number
   _all: number
 }
 
+
+export type RepoAvgAggregateInputType = {
+  userId?: true
+  totalFiles?: true
+  totalCommits?: true
+}
+
+export type RepoSumAggregateInputType = {
+  userId?: true
+  totalFiles?: true
+  totalCommits?: true
+}
 
 export type RepoMinAggregateInputType = {
   id?: true
   userId?: true
   githubRepoId?: true
+  githubUrl?: true
   owner?: true
   name?: true
+  totalFiles?: true
+  totalCommits?: true
   indexedAt?: true
   createdAt?: true
+  updatedAt?: true
 }
 
 export type RepoMaxAggregateInputType = {
   id?: true
   userId?: true
   githubRepoId?: true
+  githubUrl?: true
   owner?: true
   name?: true
+  totalFiles?: true
+  totalCommits?: true
   indexedAt?: true
   createdAt?: true
+  updatedAt?: true
 }
 
 export type RepoCountAggregateInputType = {
   id?: true
   userId?: true
   githubRepoId?: true
+  githubUrl?: true
   owner?: true
   name?: true
+  totalFiles?: true
+  totalCommits?: true
   indexedAt?: true
   createdAt?: true
+  updatedAt?: true
   _all?: true
 }
 
@@ -125,6 +175,18 @@ export type RepoAggregateArgs<ExtArgs extends runtime.Types.Extensions.InternalA
   /**
    * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
    * 
+   * Select which fields to average
+  **/
+  _avg?: RepoAvgAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
+   * Select which fields to sum
+  **/
+  _sum?: RepoSumAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
    * Select which fields to find the minimum value
   **/
   _min?: RepoMinAggregateInputType
@@ -155,19 +217,27 @@ export type RepoGroupByArgs<ExtArgs extends runtime.Types.Extensions.InternalArg
   take?: number
   skip?: number
   _count?: RepoCountAggregateInputType | true
+  _avg?: RepoAvgAggregateInputType
+  _sum?: RepoSumAggregateInputType
   _min?: RepoMinAggregateInputType
   _max?: RepoMaxAggregateInputType
 }
 
 export type RepoGroupByOutputType = {
   id: string
-  userId: string
+  userId: number
   githubRepoId: string | null
+  githubUrl: string
   owner: string
   name: string
+  totalFiles: number
+  totalCommits: number
   indexedAt: Date | null
   createdAt: Date
+  updatedAt: Date
   _count: RepoCountAggregateOutputType | null
+  _avg: RepoAvgAggregateOutputType | null
+  _sum: RepoSumAggregateOutputType | null
   _min: RepoMinAggregateOutputType | null
   _max: RepoMaxAggregateOutputType | null
 }
@@ -192,15 +262,18 @@ export type RepoWhereInput = {
   OR?: Prisma.RepoWhereInput[]
   NOT?: Prisma.RepoWhereInput | Prisma.RepoWhereInput[]
   id?: Prisma.StringFilter<"Repo"> | string
-  userId?: Prisma.StringFilter<"Repo"> | string
+  userId?: Prisma.IntFilter<"Repo"> | number
   githubRepoId?: Prisma.StringNullableFilter<"Repo"> | string | null
+  githubUrl?: Prisma.StringFilter<"Repo"> | string
   owner?: Prisma.StringFilter<"Repo"> | string
   name?: Prisma.StringFilter<"Repo"> | string
+  totalFiles?: Prisma.IntFilter<"Repo"> | number
+  totalCommits?: Prisma.IntFilter<"Repo"> | number
   indexedAt?: Prisma.DateTimeNullableFilter<"Repo"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"Repo"> | Date | string
+  updatedAt?: Prisma.DateTimeFilter<"Repo"> | Date | string
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
-  repositoryIndex?: Prisma.XOR<Prisma.RepositoryIndexNullableScalarRelationFilter, Prisma.RepositoryIndexWhereInput> | null
-  codeChunks?: Prisma.CodeChunkListRelationFilter
+  commits?: Prisma.CommitListRelationFilter
   chats?: Prisma.ChatListRelationFilter
 }
 
@@ -208,13 +281,16 @@ export type RepoOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   userId?: Prisma.SortOrder
   githubRepoId?: Prisma.SortOrderInput | Prisma.SortOrder
+  githubUrl?: Prisma.SortOrder
   owner?: Prisma.SortOrder
   name?: Prisma.SortOrder
+  totalFiles?: Prisma.SortOrder
+  totalCommits?: Prisma.SortOrder
   indexedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  updatedAt?: Prisma.SortOrder
   user?: Prisma.UserOrderByWithRelationInput
-  repositoryIndex?: Prisma.RepositoryIndexOrderByWithRelationInput
-  codeChunks?: Prisma.CodeChunkOrderByRelationAggregateInput
+  commits?: Prisma.CommitOrderByRelationAggregateInput
   chats?: Prisma.ChatOrderByRelationAggregateInput
 }
 
@@ -223,15 +299,18 @@ export type RepoWhereUniqueInput = Prisma.AtLeast<{
   AND?: Prisma.RepoWhereInput | Prisma.RepoWhereInput[]
   OR?: Prisma.RepoWhereInput[]
   NOT?: Prisma.RepoWhereInput | Prisma.RepoWhereInput[]
-  userId?: Prisma.StringFilter<"Repo"> | string
+  userId?: Prisma.IntFilter<"Repo"> | number
   githubRepoId?: Prisma.StringNullableFilter<"Repo"> | string | null
+  githubUrl?: Prisma.StringFilter<"Repo"> | string
   owner?: Prisma.StringFilter<"Repo"> | string
   name?: Prisma.StringFilter<"Repo"> | string
+  totalFiles?: Prisma.IntFilter<"Repo"> | number
+  totalCommits?: Prisma.IntFilter<"Repo"> | number
   indexedAt?: Prisma.DateTimeNullableFilter<"Repo"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"Repo"> | Date | string
+  updatedAt?: Prisma.DateTimeFilter<"Repo"> | Date | string
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
-  repositoryIndex?: Prisma.XOR<Prisma.RepositoryIndexNullableScalarRelationFilter, Prisma.RepositoryIndexWhereInput> | null
-  codeChunks?: Prisma.CodeChunkListRelationFilter
+  commits?: Prisma.CommitListRelationFilter
   chats?: Prisma.ChatListRelationFilter
 }, "id">
 
@@ -239,13 +318,19 @@ export type RepoOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   userId?: Prisma.SortOrder
   githubRepoId?: Prisma.SortOrderInput | Prisma.SortOrder
+  githubUrl?: Prisma.SortOrder
   owner?: Prisma.SortOrder
   name?: Prisma.SortOrder
+  totalFiles?: Prisma.SortOrder
+  totalCommits?: Prisma.SortOrder
   indexedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  updatedAt?: Prisma.SortOrder
   _count?: Prisma.RepoCountOrderByAggregateInput
+  _avg?: Prisma.RepoAvgOrderByAggregateInput
   _max?: Prisma.RepoMaxOrderByAggregateInput
   _min?: Prisma.RepoMinOrderByAggregateInput
+  _sum?: Prisma.RepoSumOrderByAggregateInput
 }
 
 export type RepoScalarWhereWithAggregatesInput = {
@@ -253,93 +338,121 @@ export type RepoScalarWhereWithAggregatesInput = {
   OR?: Prisma.RepoScalarWhereWithAggregatesInput[]
   NOT?: Prisma.RepoScalarWhereWithAggregatesInput | Prisma.RepoScalarWhereWithAggregatesInput[]
   id?: Prisma.StringWithAggregatesFilter<"Repo"> | string
-  userId?: Prisma.StringWithAggregatesFilter<"Repo"> | string
+  userId?: Prisma.IntWithAggregatesFilter<"Repo"> | number
   githubRepoId?: Prisma.StringNullableWithAggregatesFilter<"Repo"> | string | null
+  githubUrl?: Prisma.StringWithAggregatesFilter<"Repo"> | string
   owner?: Prisma.StringWithAggregatesFilter<"Repo"> | string
   name?: Prisma.StringWithAggregatesFilter<"Repo"> | string
+  totalFiles?: Prisma.IntWithAggregatesFilter<"Repo"> | number
+  totalCommits?: Prisma.IntWithAggregatesFilter<"Repo"> | number
   indexedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Repo"> | Date | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Repo"> | Date | string
+  updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Repo"> | Date | string
 }
 
 export type RepoCreateInput = {
   id?: string
   githubRepoId?: string | null
+  githubUrl: string
   owner: string
   name: string
+  totalFiles?: number
+  totalCommits?: number
   indexedAt?: Date | string | null
   createdAt?: Date | string
+  updatedAt?: Date | string
   user: Prisma.UserCreateNestedOneWithoutReposInput
-  repositoryIndex?: Prisma.RepositoryIndexCreateNestedOneWithoutRepoInput
-  codeChunks?: Prisma.CodeChunkCreateNestedManyWithoutRepoInput
+  commits?: Prisma.CommitCreateNestedManyWithoutRepoInput
   chats?: Prisma.ChatCreateNestedManyWithoutRepoInput
 }
 
 export type RepoUncheckedCreateInput = {
   id?: string
-  userId: string
+  userId: number
   githubRepoId?: string | null
+  githubUrl: string
   owner: string
   name: string
+  totalFiles?: number
+  totalCommits?: number
   indexedAt?: Date | string | null
   createdAt?: Date | string
-  repositoryIndex?: Prisma.RepositoryIndexUncheckedCreateNestedOneWithoutRepoInput
-  codeChunks?: Prisma.CodeChunkUncheckedCreateNestedManyWithoutRepoInput
+  updatedAt?: Date | string
+  commits?: Prisma.CommitUncheckedCreateNestedManyWithoutRepoInput
   chats?: Prisma.ChatUncheckedCreateNestedManyWithoutRepoInput
 }
 
 export type RepoUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   githubRepoId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  githubUrl?: Prisma.StringFieldUpdateOperationsInput | string
   owner?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  totalFiles?: Prisma.IntFieldUpdateOperationsInput | number
+  totalCommits?: Prisma.IntFieldUpdateOperationsInput | number
   indexedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutReposNestedInput
-  repositoryIndex?: Prisma.RepositoryIndexUpdateOneWithoutRepoNestedInput
-  codeChunks?: Prisma.CodeChunkUpdateManyWithoutRepoNestedInput
+  commits?: Prisma.CommitUpdateManyWithoutRepoNestedInput
   chats?: Prisma.ChatUpdateManyWithoutRepoNestedInput
 }
 
 export type RepoUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  userId?: Prisma.StringFieldUpdateOperationsInput | string
+  userId?: Prisma.IntFieldUpdateOperationsInput | number
   githubRepoId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  githubUrl?: Prisma.StringFieldUpdateOperationsInput | string
   owner?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  totalFiles?: Prisma.IntFieldUpdateOperationsInput | number
+  totalCommits?: Prisma.IntFieldUpdateOperationsInput | number
   indexedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  repositoryIndex?: Prisma.RepositoryIndexUncheckedUpdateOneWithoutRepoNestedInput
-  codeChunks?: Prisma.CodeChunkUncheckedUpdateManyWithoutRepoNestedInput
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  commits?: Prisma.CommitUncheckedUpdateManyWithoutRepoNestedInput
   chats?: Prisma.ChatUncheckedUpdateManyWithoutRepoNestedInput
 }
 
 export type RepoCreateManyInput = {
   id?: string
-  userId: string
+  userId: number
   githubRepoId?: string | null
+  githubUrl: string
   owner: string
   name: string
+  totalFiles?: number
+  totalCommits?: number
   indexedAt?: Date | string | null
   createdAt?: Date | string
+  updatedAt?: Date | string
 }
 
 export type RepoUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   githubRepoId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  githubUrl?: Prisma.StringFieldUpdateOperationsInput | string
   owner?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  totalFiles?: Prisma.IntFieldUpdateOperationsInput | number
+  totalCommits?: Prisma.IntFieldUpdateOperationsInput | number
   indexedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type RepoUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  userId?: Prisma.StringFieldUpdateOperationsInput | string
+  userId?: Prisma.IntFieldUpdateOperationsInput | number
   githubRepoId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  githubUrl?: Prisma.StringFieldUpdateOperationsInput | string
   owner?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  totalFiles?: Prisma.IntFieldUpdateOperationsInput | number
+  totalCommits?: Prisma.IntFieldUpdateOperationsInput | number
   indexedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type RepoListRelationFilter = {
@@ -356,40 +469,64 @@ export type RepoCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   userId?: Prisma.SortOrder
   githubRepoId?: Prisma.SortOrder
+  githubUrl?: Prisma.SortOrder
   owner?: Prisma.SortOrder
   name?: Prisma.SortOrder
+  totalFiles?: Prisma.SortOrder
+  totalCommits?: Prisma.SortOrder
   indexedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  updatedAt?: Prisma.SortOrder
+}
+
+export type RepoAvgOrderByAggregateInput = {
+  userId?: Prisma.SortOrder
+  totalFiles?: Prisma.SortOrder
+  totalCommits?: Prisma.SortOrder
 }
 
 export type RepoMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   userId?: Prisma.SortOrder
   githubRepoId?: Prisma.SortOrder
+  githubUrl?: Prisma.SortOrder
   owner?: Prisma.SortOrder
   name?: Prisma.SortOrder
+  totalFiles?: Prisma.SortOrder
+  totalCommits?: Prisma.SortOrder
   indexedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  updatedAt?: Prisma.SortOrder
 }
 
 export type RepoMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   userId?: Prisma.SortOrder
   githubRepoId?: Prisma.SortOrder
+  githubUrl?: Prisma.SortOrder
   owner?: Prisma.SortOrder
   name?: Prisma.SortOrder
+  totalFiles?: Prisma.SortOrder
+  totalCommits?: Prisma.SortOrder
   indexedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  updatedAt?: Prisma.SortOrder
 }
 
-export type RepoNullableScalarRelationFilter = {
-  is?: Prisma.RepoWhereInput | null
-  isNot?: Prisma.RepoWhereInput | null
+export type RepoSumOrderByAggregateInput = {
+  userId?: Prisma.SortOrder
+  totalFiles?: Prisma.SortOrder
+  totalCommits?: Prisma.SortOrder
 }
 
 export type RepoScalarRelationFilter = {
   is?: Prisma.RepoWhereInput
   isNot?: Prisma.RepoWhereInput
+}
+
+export type RepoNullableScalarRelationFilter = {
+  is?: Prisma.RepoWhereInput | null
+  isNot?: Prisma.RepoWhereInput | null
 }
 
 export type RepoCreateNestedManyWithoutUserInput = {
@@ -438,6 +575,20 @@ export type NullableDateTimeFieldUpdateOperationsInput = {
   set?: Date | string | null
 }
 
+export type RepoCreateNestedOneWithoutCommitsInput = {
+  create?: Prisma.XOR<Prisma.RepoCreateWithoutCommitsInput, Prisma.RepoUncheckedCreateWithoutCommitsInput>
+  connectOrCreate?: Prisma.RepoCreateOrConnectWithoutCommitsInput
+  connect?: Prisma.RepoWhereUniqueInput
+}
+
+export type RepoUpdateOneRequiredWithoutCommitsNestedInput = {
+  create?: Prisma.XOR<Prisma.RepoCreateWithoutCommitsInput, Prisma.RepoUncheckedCreateWithoutCommitsInput>
+  connectOrCreate?: Prisma.RepoCreateOrConnectWithoutCommitsInput
+  upsert?: Prisma.RepoUpsertWithoutCommitsInput
+  connect?: Prisma.RepoWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.RepoUpdateToOneWithWhereWithoutCommitsInput, Prisma.RepoUpdateWithoutCommitsInput>, Prisma.RepoUncheckedUpdateWithoutCommitsInput>
+}
+
 export type RepoCreateNestedOneWithoutChatsInput = {
   create?: Prisma.XOR<Prisma.RepoCreateWithoutChatsInput, Prisma.RepoUncheckedCreateWithoutChatsInput>
   connectOrCreate?: Prisma.RepoCreateOrConnectWithoutChatsInput
@@ -454,55 +605,33 @@ export type RepoUpdateOneWithoutChatsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.RepoUpdateToOneWithWhereWithoutChatsInput, Prisma.RepoUpdateWithoutChatsInput>, Prisma.RepoUncheckedUpdateWithoutChatsInput>
 }
 
-export type RepoCreateNestedOneWithoutRepositoryIndexInput = {
-  create?: Prisma.XOR<Prisma.RepoCreateWithoutRepositoryIndexInput, Prisma.RepoUncheckedCreateWithoutRepositoryIndexInput>
-  connectOrCreate?: Prisma.RepoCreateOrConnectWithoutRepositoryIndexInput
-  connect?: Prisma.RepoWhereUniqueInput
-}
-
-export type RepoUpdateOneRequiredWithoutRepositoryIndexNestedInput = {
-  create?: Prisma.XOR<Prisma.RepoCreateWithoutRepositoryIndexInput, Prisma.RepoUncheckedCreateWithoutRepositoryIndexInput>
-  connectOrCreate?: Prisma.RepoCreateOrConnectWithoutRepositoryIndexInput
-  upsert?: Prisma.RepoUpsertWithoutRepositoryIndexInput
-  connect?: Prisma.RepoWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.RepoUpdateToOneWithWhereWithoutRepositoryIndexInput, Prisma.RepoUpdateWithoutRepositoryIndexInput>, Prisma.RepoUncheckedUpdateWithoutRepositoryIndexInput>
-}
-
-export type RepoCreateNestedOneWithoutCodeChunksInput = {
-  create?: Prisma.XOR<Prisma.RepoCreateWithoutCodeChunksInput, Prisma.RepoUncheckedCreateWithoutCodeChunksInput>
-  connectOrCreate?: Prisma.RepoCreateOrConnectWithoutCodeChunksInput
-  connect?: Prisma.RepoWhereUniqueInput
-}
-
-export type RepoUpdateOneRequiredWithoutCodeChunksNestedInput = {
-  create?: Prisma.XOR<Prisma.RepoCreateWithoutCodeChunksInput, Prisma.RepoUncheckedCreateWithoutCodeChunksInput>
-  connectOrCreate?: Prisma.RepoCreateOrConnectWithoutCodeChunksInput
-  upsert?: Prisma.RepoUpsertWithoutCodeChunksInput
-  connect?: Prisma.RepoWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.RepoUpdateToOneWithWhereWithoutCodeChunksInput, Prisma.RepoUpdateWithoutCodeChunksInput>, Prisma.RepoUncheckedUpdateWithoutCodeChunksInput>
-}
-
 export type RepoCreateWithoutUserInput = {
   id?: string
   githubRepoId?: string | null
+  githubUrl: string
   owner: string
   name: string
+  totalFiles?: number
+  totalCommits?: number
   indexedAt?: Date | string | null
   createdAt?: Date | string
-  repositoryIndex?: Prisma.RepositoryIndexCreateNestedOneWithoutRepoInput
-  codeChunks?: Prisma.CodeChunkCreateNestedManyWithoutRepoInput
+  updatedAt?: Date | string
+  commits?: Prisma.CommitCreateNestedManyWithoutRepoInput
   chats?: Prisma.ChatCreateNestedManyWithoutRepoInput
 }
 
 export type RepoUncheckedCreateWithoutUserInput = {
   id?: string
   githubRepoId?: string | null
+  githubUrl: string
   owner: string
   name: string
+  totalFiles?: number
+  totalCommits?: number
   indexedAt?: Date | string | null
   createdAt?: Date | string
-  repositoryIndex?: Prisma.RepositoryIndexUncheckedCreateNestedOneWithoutRepoInput
-  codeChunks?: Prisma.CodeChunkUncheckedCreateNestedManyWithoutRepoInput
+  updatedAt?: Date | string
+  commits?: Prisma.CommitUncheckedCreateNestedManyWithoutRepoInput
   chats?: Prisma.ChatUncheckedCreateNestedManyWithoutRepoInput
 }
 
@@ -537,36 +666,122 @@ export type RepoScalarWhereInput = {
   OR?: Prisma.RepoScalarWhereInput[]
   NOT?: Prisma.RepoScalarWhereInput | Prisma.RepoScalarWhereInput[]
   id?: Prisma.StringFilter<"Repo"> | string
-  userId?: Prisma.StringFilter<"Repo"> | string
+  userId?: Prisma.IntFilter<"Repo"> | number
   githubRepoId?: Prisma.StringNullableFilter<"Repo"> | string | null
+  githubUrl?: Prisma.StringFilter<"Repo"> | string
   owner?: Prisma.StringFilter<"Repo"> | string
   name?: Prisma.StringFilter<"Repo"> | string
+  totalFiles?: Prisma.IntFilter<"Repo"> | number
+  totalCommits?: Prisma.IntFilter<"Repo"> | number
   indexedAt?: Prisma.DateTimeNullableFilter<"Repo"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"Repo"> | Date | string
+  updatedAt?: Prisma.DateTimeFilter<"Repo"> | Date | string
+}
+
+export type RepoCreateWithoutCommitsInput = {
+  id?: string
+  githubRepoId?: string | null
+  githubUrl: string
+  owner: string
+  name: string
+  totalFiles?: number
+  totalCommits?: number
+  indexedAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  user: Prisma.UserCreateNestedOneWithoutReposInput
+  chats?: Prisma.ChatCreateNestedManyWithoutRepoInput
+}
+
+export type RepoUncheckedCreateWithoutCommitsInput = {
+  id?: string
+  userId: number
+  githubRepoId?: string | null
+  githubUrl: string
+  owner: string
+  name: string
+  totalFiles?: number
+  totalCommits?: number
+  indexedAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  chats?: Prisma.ChatUncheckedCreateNestedManyWithoutRepoInput
+}
+
+export type RepoCreateOrConnectWithoutCommitsInput = {
+  where: Prisma.RepoWhereUniqueInput
+  create: Prisma.XOR<Prisma.RepoCreateWithoutCommitsInput, Prisma.RepoUncheckedCreateWithoutCommitsInput>
+}
+
+export type RepoUpsertWithoutCommitsInput = {
+  update: Prisma.XOR<Prisma.RepoUpdateWithoutCommitsInput, Prisma.RepoUncheckedUpdateWithoutCommitsInput>
+  create: Prisma.XOR<Prisma.RepoCreateWithoutCommitsInput, Prisma.RepoUncheckedCreateWithoutCommitsInput>
+  where?: Prisma.RepoWhereInput
+}
+
+export type RepoUpdateToOneWithWhereWithoutCommitsInput = {
+  where?: Prisma.RepoWhereInput
+  data: Prisma.XOR<Prisma.RepoUpdateWithoutCommitsInput, Prisma.RepoUncheckedUpdateWithoutCommitsInput>
+}
+
+export type RepoUpdateWithoutCommitsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  githubRepoId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  githubUrl?: Prisma.StringFieldUpdateOperationsInput | string
+  owner?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  totalFiles?: Prisma.IntFieldUpdateOperationsInput | number
+  totalCommits?: Prisma.IntFieldUpdateOperationsInput | number
+  indexedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  user?: Prisma.UserUpdateOneRequiredWithoutReposNestedInput
+  chats?: Prisma.ChatUpdateManyWithoutRepoNestedInput
+}
+
+export type RepoUncheckedUpdateWithoutCommitsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  userId?: Prisma.IntFieldUpdateOperationsInput | number
+  githubRepoId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  githubUrl?: Prisma.StringFieldUpdateOperationsInput | string
+  owner?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  totalFiles?: Prisma.IntFieldUpdateOperationsInput | number
+  totalCommits?: Prisma.IntFieldUpdateOperationsInput | number
+  indexedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  chats?: Prisma.ChatUncheckedUpdateManyWithoutRepoNestedInput
 }
 
 export type RepoCreateWithoutChatsInput = {
   id?: string
   githubRepoId?: string | null
+  githubUrl: string
   owner: string
   name: string
+  totalFiles?: number
+  totalCommits?: number
   indexedAt?: Date | string | null
   createdAt?: Date | string
+  updatedAt?: Date | string
   user: Prisma.UserCreateNestedOneWithoutReposInput
-  repositoryIndex?: Prisma.RepositoryIndexCreateNestedOneWithoutRepoInput
-  codeChunks?: Prisma.CodeChunkCreateNestedManyWithoutRepoInput
+  commits?: Prisma.CommitCreateNestedManyWithoutRepoInput
 }
 
 export type RepoUncheckedCreateWithoutChatsInput = {
   id?: string
-  userId: string
+  userId: number
   githubRepoId?: string | null
+  githubUrl: string
   owner: string
   name: string
+  totalFiles?: number
+  totalCommits?: number
   indexedAt?: Date | string | null
   createdAt?: Date | string
-  repositoryIndex?: Prisma.RepositoryIndexUncheckedCreateNestedOneWithoutRepoInput
-  codeChunks?: Prisma.CodeChunkUncheckedCreateNestedManyWithoutRepoInput
+  updatedAt?: Date | string
+  commits?: Prisma.CommitUncheckedCreateNestedManyWithoutRepoInput
 }
 
 export type RepoCreateOrConnectWithoutChatsInput = {
@@ -588,195 +803,87 @@ export type RepoUpdateToOneWithWhereWithoutChatsInput = {
 export type RepoUpdateWithoutChatsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   githubRepoId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  githubUrl?: Prisma.StringFieldUpdateOperationsInput | string
   owner?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  totalFiles?: Prisma.IntFieldUpdateOperationsInput | number
+  totalCommits?: Prisma.IntFieldUpdateOperationsInput | number
   indexedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutReposNestedInput
-  repositoryIndex?: Prisma.RepositoryIndexUpdateOneWithoutRepoNestedInput
-  codeChunks?: Prisma.CodeChunkUpdateManyWithoutRepoNestedInput
+  commits?: Prisma.CommitUpdateManyWithoutRepoNestedInput
 }
 
 export type RepoUncheckedUpdateWithoutChatsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  userId?: Prisma.StringFieldUpdateOperationsInput | string
+  userId?: Prisma.IntFieldUpdateOperationsInput | number
   githubRepoId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  githubUrl?: Prisma.StringFieldUpdateOperationsInput | string
   owner?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  totalFiles?: Prisma.IntFieldUpdateOperationsInput | number
+  totalCommits?: Prisma.IntFieldUpdateOperationsInput | number
   indexedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  repositoryIndex?: Prisma.RepositoryIndexUncheckedUpdateOneWithoutRepoNestedInput
-  codeChunks?: Prisma.CodeChunkUncheckedUpdateManyWithoutRepoNestedInput
-}
-
-export type RepoCreateWithoutRepositoryIndexInput = {
-  id?: string
-  githubRepoId?: string | null
-  owner: string
-  name: string
-  indexedAt?: Date | string | null
-  createdAt?: Date | string
-  user: Prisma.UserCreateNestedOneWithoutReposInput
-  codeChunks?: Prisma.CodeChunkCreateNestedManyWithoutRepoInput
-  chats?: Prisma.ChatCreateNestedManyWithoutRepoInput
-}
-
-export type RepoUncheckedCreateWithoutRepositoryIndexInput = {
-  id?: string
-  userId: string
-  githubRepoId?: string | null
-  owner: string
-  name: string
-  indexedAt?: Date | string | null
-  createdAt?: Date | string
-  codeChunks?: Prisma.CodeChunkUncheckedCreateNestedManyWithoutRepoInput
-  chats?: Prisma.ChatUncheckedCreateNestedManyWithoutRepoInput
-}
-
-export type RepoCreateOrConnectWithoutRepositoryIndexInput = {
-  where: Prisma.RepoWhereUniqueInput
-  create: Prisma.XOR<Prisma.RepoCreateWithoutRepositoryIndexInput, Prisma.RepoUncheckedCreateWithoutRepositoryIndexInput>
-}
-
-export type RepoUpsertWithoutRepositoryIndexInput = {
-  update: Prisma.XOR<Prisma.RepoUpdateWithoutRepositoryIndexInput, Prisma.RepoUncheckedUpdateWithoutRepositoryIndexInput>
-  create: Prisma.XOR<Prisma.RepoCreateWithoutRepositoryIndexInput, Prisma.RepoUncheckedCreateWithoutRepositoryIndexInput>
-  where?: Prisma.RepoWhereInput
-}
-
-export type RepoUpdateToOneWithWhereWithoutRepositoryIndexInput = {
-  where?: Prisma.RepoWhereInput
-  data: Prisma.XOR<Prisma.RepoUpdateWithoutRepositoryIndexInput, Prisma.RepoUncheckedUpdateWithoutRepositoryIndexInput>
-}
-
-export type RepoUpdateWithoutRepositoryIndexInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  githubRepoId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  owner?: Prisma.StringFieldUpdateOperationsInput | string
-  name?: Prisma.StringFieldUpdateOperationsInput | string
-  indexedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  user?: Prisma.UserUpdateOneRequiredWithoutReposNestedInput
-  codeChunks?: Prisma.CodeChunkUpdateManyWithoutRepoNestedInput
-  chats?: Prisma.ChatUpdateManyWithoutRepoNestedInput
-}
-
-export type RepoUncheckedUpdateWithoutRepositoryIndexInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  userId?: Prisma.StringFieldUpdateOperationsInput | string
-  githubRepoId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  owner?: Prisma.StringFieldUpdateOperationsInput | string
-  name?: Prisma.StringFieldUpdateOperationsInput | string
-  indexedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  codeChunks?: Prisma.CodeChunkUncheckedUpdateManyWithoutRepoNestedInput
-  chats?: Prisma.ChatUncheckedUpdateManyWithoutRepoNestedInput
-}
-
-export type RepoCreateWithoutCodeChunksInput = {
-  id?: string
-  githubRepoId?: string | null
-  owner: string
-  name: string
-  indexedAt?: Date | string | null
-  createdAt?: Date | string
-  user: Prisma.UserCreateNestedOneWithoutReposInput
-  repositoryIndex?: Prisma.RepositoryIndexCreateNestedOneWithoutRepoInput
-  chats?: Prisma.ChatCreateNestedManyWithoutRepoInput
-}
-
-export type RepoUncheckedCreateWithoutCodeChunksInput = {
-  id?: string
-  userId: string
-  githubRepoId?: string | null
-  owner: string
-  name: string
-  indexedAt?: Date | string | null
-  createdAt?: Date | string
-  repositoryIndex?: Prisma.RepositoryIndexUncheckedCreateNestedOneWithoutRepoInput
-  chats?: Prisma.ChatUncheckedCreateNestedManyWithoutRepoInput
-}
-
-export type RepoCreateOrConnectWithoutCodeChunksInput = {
-  where: Prisma.RepoWhereUniqueInput
-  create: Prisma.XOR<Prisma.RepoCreateWithoutCodeChunksInput, Prisma.RepoUncheckedCreateWithoutCodeChunksInput>
-}
-
-export type RepoUpsertWithoutCodeChunksInput = {
-  update: Prisma.XOR<Prisma.RepoUpdateWithoutCodeChunksInput, Prisma.RepoUncheckedUpdateWithoutCodeChunksInput>
-  create: Prisma.XOR<Prisma.RepoCreateWithoutCodeChunksInput, Prisma.RepoUncheckedCreateWithoutCodeChunksInput>
-  where?: Prisma.RepoWhereInput
-}
-
-export type RepoUpdateToOneWithWhereWithoutCodeChunksInput = {
-  where?: Prisma.RepoWhereInput
-  data: Prisma.XOR<Prisma.RepoUpdateWithoutCodeChunksInput, Prisma.RepoUncheckedUpdateWithoutCodeChunksInput>
-}
-
-export type RepoUpdateWithoutCodeChunksInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  githubRepoId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  owner?: Prisma.StringFieldUpdateOperationsInput | string
-  name?: Prisma.StringFieldUpdateOperationsInput | string
-  indexedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  user?: Prisma.UserUpdateOneRequiredWithoutReposNestedInput
-  repositoryIndex?: Prisma.RepositoryIndexUpdateOneWithoutRepoNestedInput
-  chats?: Prisma.ChatUpdateManyWithoutRepoNestedInput
-}
-
-export type RepoUncheckedUpdateWithoutCodeChunksInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  userId?: Prisma.StringFieldUpdateOperationsInput | string
-  githubRepoId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  owner?: Prisma.StringFieldUpdateOperationsInput | string
-  name?: Prisma.StringFieldUpdateOperationsInput | string
-  indexedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  repositoryIndex?: Prisma.RepositoryIndexUncheckedUpdateOneWithoutRepoNestedInput
-  chats?: Prisma.ChatUncheckedUpdateManyWithoutRepoNestedInput
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  commits?: Prisma.CommitUncheckedUpdateManyWithoutRepoNestedInput
 }
 
 export type RepoCreateManyUserInput = {
   id?: string
   githubRepoId?: string | null
+  githubUrl: string
   owner: string
   name: string
+  totalFiles?: number
+  totalCommits?: number
   indexedAt?: Date | string | null
   createdAt?: Date | string
+  updatedAt?: Date | string
 }
 
 export type RepoUpdateWithoutUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   githubRepoId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  githubUrl?: Prisma.StringFieldUpdateOperationsInput | string
   owner?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  totalFiles?: Prisma.IntFieldUpdateOperationsInput | number
+  totalCommits?: Prisma.IntFieldUpdateOperationsInput | number
   indexedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  repositoryIndex?: Prisma.RepositoryIndexUpdateOneWithoutRepoNestedInput
-  codeChunks?: Prisma.CodeChunkUpdateManyWithoutRepoNestedInput
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  commits?: Prisma.CommitUpdateManyWithoutRepoNestedInput
   chats?: Prisma.ChatUpdateManyWithoutRepoNestedInput
 }
 
 export type RepoUncheckedUpdateWithoutUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   githubRepoId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  githubUrl?: Prisma.StringFieldUpdateOperationsInput | string
   owner?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  totalFiles?: Prisma.IntFieldUpdateOperationsInput | number
+  totalCommits?: Prisma.IntFieldUpdateOperationsInput | number
   indexedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  repositoryIndex?: Prisma.RepositoryIndexUncheckedUpdateOneWithoutRepoNestedInput
-  codeChunks?: Prisma.CodeChunkUncheckedUpdateManyWithoutRepoNestedInput
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  commits?: Prisma.CommitUncheckedUpdateManyWithoutRepoNestedInput
   chats?: Prisma.ChatUncheckedUpdateManyWithoutRepoNestedInput
 }
 
 export type RepoUncheckedUpdateManyWithoutUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   githubRepoId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  githubUrl?: Prisma.StringFieldUpdateOperationsInput | string
   owner?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  totalFiles?: Prisma.IntFieldUpdateOperationsInput | number
+  totalCommits?: Prisma.IntFieldUpdateOperationsInput | number
   indexedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 
@@ -785,12 +892,12 @@ export type RepoUncheckedUpdateManyWithoutUserInput = {
  */
 
 export type RepoCountOutputType = {
-  codeChunks: number
+  commits: number
   chats: number
 }
 
 export type RepoCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  codeChunks?: boolean | RepoCountOutputTypeCountCodeChunksArgs
+  commits?: boolean | RepoCountOutputTypeCountCommitsArgs
   chats?: boolean | RepoCountOutputTypeCountChatsArgs
 }
 
@@ -807,8 +914,8 @@ export type RepoCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Extensi
 /**
  * RepoCountOutputType without action
  */
-export type RepoCountOutputTypeCountCodeChunksArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.CodeChunkWhereInput
+export type RepoCountOutputTypeCountCommitsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.CommitWhereInput
 }
 
 /**
@@ -823,13 +930,16 @@ export type RepoSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   id?: boolean
   userId?: boolean
   githubRepoId?: boolean
+  githubUrl?: boolean
   owner?: boolean
   name?: boolean
+  totalFiles?: boolean
+  totalCommits?: boolean
   indexedAt?: boolean
   createdAt?: boolean
+  updatedAt?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
-  repositoryIndex?: boolean | Prisma.Repo$repositoryIndexArgs<ExtArgs>
-  codeChunks?: boolean | Prisma.Repo$codeChunksArgs<ExtArgs>
+  commits?: boolean | Prisma.Repo$commitsArgs<ExtArgs>
   chats?: boolean | Prisma.Repo$chatsArgs<ExtArgs>
   _count?: boolean | Prisma.RepoCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["repo"]>
@@ -838,10 +948,14 @@ export type RepoSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   id?: boolean
   userId?: boolean
   githubRepoId?: boolean
+  githubUrl?: boolean
   owner?: boolean
   name?: boolean
+  totalFiles?: boolean
+  totalCommits?: boolean
   indexedAt?: boolean
   createdAt?: boolean
+  updatedAt?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["repo"]>
 
@@ -849,10 +963,14 @@ export type RepoSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   id?: boolean
   userId?: boolean
   githubRepoId?: boolean
+  githubUrl?: boolean
   owner?: boolean
   name?: boolean
+  totalFiles?: boolean
+  totalCommits?: boolean
   indexedAt?: boolean
   createdAt?: boolean
+  updatedAt?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["repo"]>
 
@@ -860,17 +978,20 @@ export type RepoSelectScalar = {
   id?: boolean
   userId?: boolean
   githubRepoId?: boolean
+  githubUrl?: boolean
   owner?: boolean
   name?: boolean
+  totalFiles?: boolean
+  totalCommits?: boolean
   indexedAt?: boolean
   createdAt?: boolean
+  updatedAt?: boolean
 }
 
-export type RepoOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "githubRepoId" | "owner" | "name" | "indexedAt" | "createdAt", ExtArgs["result"]["repo"]>
+export type RepoOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "githubRepoId" | "githubUrl" | "owner" | "name" | "totalFiles" | "totalCommits" | "indexedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["repo"]>
 export type RepoInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
-  repositoryIndex?: boolean | Prisma.Repo$repositoryIndexArgs<ExtArgs>
-  codeChunks?: boolean | Prisma.Repo$codeChunksArgs<ExtArgs>
+  commits?: boolean | Prisma.Repo$commitsArgs<ExtArgs>
   chats?: boolean | Prisma.Repo$chatsArgs<ExtArgs>
   _count?: boolean | Prisma.RepoCountOutputTypeDefaultArgs<ExtArgs>
 }
@@ -885,18 +1006,21 @@ export type $RepoPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   name: "Repo"
   objects: {
     user: Prisma.$UserPayload<ExtArgs>
-    repositoryIndex: Prisma.$RepositoryIndexPayload<ExtArgs> | null
-    codeChunks: Prisma.$CodeChunkPayload<ExtArgs>[]
+    commits: Prisma.$CommitPayload<ExtArgs>[]
     chats: Prisma.$ChatPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
-    userId: string
+    userId: number
     githubRepoId: string | null
+    githubUrl: string
     owner: string
     name: string
+    totalFiles: number
+    totalCommits: number
     indexedAt: Date | null
     createdAt: Date
+    updatedAt: Date
   }, ExtArgs["result"]["repo"]>
   composites: {}
 }
@@ -1292,8 +1416,7 @@ readonly fields: RepoFieldRefs;
 export interface Prisma__RepoClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   user<T extends Prisma.UserDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.UserDefaultArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
-  repositoryIndex<T extends Prisma.Repo$repositoryIndexArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Repo$repositoryIndexArgs<ExtArgs>>): Prisma.Prisma__RepositoryIndexClient<runtime.Types.Result.GetResult<Prisma.$RepositoryIndexPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
-  codeChunks<T extends Prisma.Repo$codeChunksArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Repo$codeChunksArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CodeChunkPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  commits<T extends Prisma.Repo$commitsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Repo$commitsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CommitPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   chats<T extends Prisma.Repo$chatsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Repo$chatsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ChatPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
@@ -1325,12 +1448,16 @@ export interface Prisma__RepoClient<T, Null = never, ExtArgs extends runtime.Typ
  */
 export interface RepoFieldRefs {
   readonly id: Prisma.FieldRef<"Repo", 'String'>
-  readonly userId: Prisma.FieldRef<"Repo", 'String'>
+  readonly userId: Prisma.FieldRef<"Repo", 'Int'>
   readonly githubRepoId: Prisma.FieldRef<"Repo", 'String'>
+  readonly githubUrl: Prisma.FieldRef<"Repo", 'String'>
   readonly owner: Prisma.FieldRef<"Repo", 'String'>
   readonly name: Prisma.FieldRef<"Repo", 'String'>
+  readonly totalFiles: Prisma.FieldRef<"Repo", 'Int'>
+  readonly totalCommits: Prisma.FieldRef<"Repo", 'Int'>
   readonly indexedAt: Prisma.FieldRef<"Repo", 'DateTime'>
   readonly createdAt: Prisma.FieldRef<"Repo", 'DateTime'>
+  readonly updatedAt: Prisma.FieldRef<"Repo", 'DateTime'>
 }
     
 
@@ -1732,46 +1859,27 @@ export type RepoDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.Internal
 }
 
 /**
- * Repo.repositoryIndex
+ * Repo.commits
  */
-export type Repo$repositoryIndexArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+export type Repo$commitsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   /**
-   * Select specific fields to fetch from the RepositoryIndex
+   * Select specific fields to fetch from the Commit
    */
-  select?: Prisma.RepositoryIndexSelect<ExtArgs> | null
+  select?: Prisma.CommitSelect<ExtArgs> | null
   /**
-   * Omit specific fields from the RepositoryIndex
+   * Omit specific fields from the Commit
    */
-  omit?: Prisma.RepositoryIndexOmit<ExtArgs> | null
+  omit?: Prisma.CommitOmit<ExtArgs> | null
   /**
    * Choose, which related nodes to fetch as well
    */
-  include?: Prisma.RepositoryIndexInclude<ExtArgs> | null
-  where?: Prisma.RepositoryIndexWhereInput
-}
-
-/**
- * Repo.codeChunks
- */
-export type Repo$codeChunksArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the CodeChunk
-   */
-  select?: Prisma.CodeChunkSelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the CodeChunk
-   */
-  omit?: Prisma.CodeChunkOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.CodeChunkInclude<ExtArgs> | null
-  where?: Prisma.CodeChunkWhereInput
-  orderBy?: Prisma.CodeChunkOrderByWithRelationInput | Prisma.CodeChunkOrderByWithRelationInput[]
-  cursor?: Prisma.CodeChunkWhereUniqueInput
+  include?: Prisma.CommitInclude<ExtArgs> | null
+  where?: Prisma.CommitWhereInput
+  orderBy?: Prisma.CommitOrderByWithRelationInput | Prisma.CommitOrderByWithRelationInput[]
+  cursor?: Prisma.CommitWhereUniqueInput
   take?: number
   skip?: number
-  distinct?: Prisma.CodeChunkScalarFieldEnum | Prisma.CodeChunkScalarFieldEnum[]
+  distinct?: Prisma.CommitScalarFieldEnum | Prisma.CommitScalarFieldEnum[]
 }
 
 /**

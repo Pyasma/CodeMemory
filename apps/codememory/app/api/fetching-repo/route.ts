@@ -46,23 +46,136 @@ export async function POST(req: Request) {
       owner,
       repo,
     })
+    const commits = await github.rest.repos.listCommits({
+      owner,
+      repo,
+      per_page: 100,
+    })
 
     const [totalFiles, totalCommits] = await Promise.all([
       countFiles(github, owner, repo),
       countCommits(github, owner, repo),
     ])
 
-    const repository = await prisma.repo.create({
-      data: {
+    const existingRepository = await prisma.repo.findFirst({
+      where: {
         userId: user.id,
         githubRepoId: String(repositoryData.id),
-        githubUrl: repositoryData.html_url,
-        owner: repositoryData.owner.login,
-        name: repositoryData.name,
-        totalFiles,
-        totalCommits,
       },
     })
+
+    const repository = existingRepository
+      ? await prisma.repo.update({
+          where: {
+            id: existingRepository.id,
+          },
+          data: {
+            userId: user.id,
+            githubUrl: repositoryData.html_url,
+            owner: repositoryData.owner.login,
+            name: repositoryData.name,
+            totalFiles,
+            totalCommits,
+          },
+        })
+      : await prisma.repo.create({
+          data: {
+            userId: user.id,
+            githubRepoId: String(repositoryData.id),
+            githubUrl: repositoryData.html_url,
+            owner: repositoryData.owner.login,
+            name: repositoryData.name,
+            totalFiles,
+            totalCommits,
+          },
+        })
+
+    if (existingRepository) {
+      const existingCommitIds = await prisma.commit.findMany({
+        where: {
+          repoId: repository.id,
+        },
+        select: {
+          id: true,
+        },
+      })
+
+      await prisma.commitFile.deleteMany({
+        where: {
+          commitId: {
+            in: existingCommitIds.map((commit) => commit.id),
+          },
+        },
+      })
+
+      await prisma.commit.deleteMany({
+        where: {
+          repoId: repository.id,
+        },
+      })
+    }
+
+    await prisma.commit.createMany({
+      data: commits.data.map((commit) => ({
+        repoId: repository.id,
+        sha: commit.sha,
+        message: commit.commit.message,
+        authorName: commit.commit.author?.name ?? "Unknown",
+        committedAt: new Date(
+          commit.commit.author?.date ?? Date.now()
+        ),
+        summary: null,
+      })),
+    })
+
+    const storedCommits = await prisma.commit.findMany({
+      where: {
+        repoId: repository.id,
+        sha: {
+          in: commits.data.map((commit) => commit.sha),
+        },
+      },
+      select: {
+        id: true,
+        sha: true,
+      },
+    })
+
+    const commitIdBySha = new Map(
+      storedCommits.map((commit) => [commit.sha, commit.id])
+    )
+
+    const commitFilesData = await Promise.all(
+      commits.data.map(async (commit) => {
+        const commitId = commitIdBySha.get(commit.sha)
+        if (!commitId) {
+          return []
+        }
+
+        const { data: commitDetails } = await github.rest.repos.getCommit({
+          owner,
+          repo,
+          ref: commit.sha,
+        })
+
+        return (
+          commitDetails.files?.map((file) => ({
+            commitId,
+            filePath: file.filename,
+            status: file.status,
+            additions: file.additions,
+            deletions: file.deletions,
+            changes: file.changes,
+            patch: file.patch ?? null,
+          })) ?? []
+        )
+      })
+    )
+
+    await prisma.commitFile.createMany({
+      data: commitFilesData.flat(),
+    })
+
 
     return NextResponse.json(
       {

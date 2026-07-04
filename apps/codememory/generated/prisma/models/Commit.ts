@@ -199,6 +199,7 @@ export type CommitWhereInput = {
   committedAt?: Prisma.DateTimeFilter<"Commit"> | Date | string
   summary?: Prisma.StringNullableFilter<"Commit"> | string | null
   repo?: Prisma.XOR<Prisma.RepoScalarRelationFilter, Prisma.RepoWhereInput>
+  files?: Prisma.CommitFileListRelationFilter
 }
 
 export type CommitOrderByWithRelationInput = {
@@ -210,6 +211,7 @@ export type CommitOrderByWithRelationInput = {
   committedAt?: Prisma.SortOrder
   summary?: Prisma.SortOrderInput | Prisma.SortOrder
   repo?: Prisma.RepoOrderByWithRelationInput
+  files?: Prisma.CommitFileOrderByRelationAggregateInput
 }
 
 export type CommitWhereUniqueInput = Prisma.AtLeast<{
@@ -224,6 +226,7 @@ export type CommitWhereUniqueInput = Prisma.AtLeast<{
   committedAt?: Prisma.DateTimeFilter<"Commit"> | Date | string
   summary?: Prisma.StringNullableFilter<"Commit"> | string | null
   repo?: Prisma.XOR<Prisma.RepoScalarRelationFilter, Prisma.RepoWhereInput>
+  files?: Prisma.CommitFileListRelationFilter
 }, "id" | "sha">
 
 export type CommitOrderByWithAggregationInput = {
@@ -260,6 +263,7 @@ export type CommitCreateInput = {
   committedAt: Date | string
   summary?: string | null
   repo: Prisma.RepoCreateNestedOneWithoutCommitsInput
+  files?: Prisma.CommitFileCreateNestedManyWithoutCommitInput
 }
 
 export type CommitUncheckedCreateInput = {
@@ -270,6 +274,7 @@ export type CommitUncheckedCreateInput = {
   authorName?: string | null
   committedAt: Date | string
   summary?: string | null
+  files?: Prisma.CommitFileUncheckedCreateNestedManyWithoutCommitInput
 }
 
 export type CommitUpdateInput = {
@@ -280,6 +285,7 @@ export type CommitUpdateInput = {
   committedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   summary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   repo?: Prisma.RepoUpdateOneRequiredWithoutCommitsNestedInput
+  files?: Prisma.CommitFileUpdateManyWithoutCommitNestedInput
 }
 
 export type CommitUncheckedUpdateInput = {
@@ -290,6 +296,7 @@ export type CommitUncheckedUpdateInput = {
   authorName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   committedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   summary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  files?: Prisma.CommitFileUncheckedUpdateManyWithoutCommitNestedInput
 }
 
 export type CommitCreateManyInput = {
@@ -361,6 +368,11 @@ export type CommitMinOrderByAggregateInput = {
   summary?: Prisma.SortOrder
 }
 
+export type CommitScalarRelationFilter = {
+  is?: Prisma.CommitWhereInput
+  isNot?: Prisma.CommitWhereInput
+}
+
 export type CommitCreateNestedManyWithoutRepoInput = {
   create?: Prisma.XOR<Prisma.CommitCreateWithoutRepoInput, Prisma.CommitUncheckedCreateWithoutRepoInput> | Prisma.CommitCreateWithoutRepoInput[] | Prisma.CommitUncheckedCreateWithoutRepoInput[]
   connectOrCreate?: Prisma.CommitCreateOrConnectWithoutRepoInput | Prisma.CommitCreateOrConnectWithoutRepoInput[]
@@ -403,6 +415,20 @@ export type CommitUncheckedUpdateManyWithoutRepoNestedInput = {
   deleteMany?: Prisma.CommitScalarWhereInput | Prisma.CommitScalarWhereInput[]
 }
 
+export type CommitCreateNestedOneWithoutFilesInput = {
+  create?: Prisma.XOR<Prisma.CommitCreateWithoutFilesInput, Prisma.CommitUncheckedCreateWithoutFilesInput>
+  connectOrCreate?: Prisma.CommitCreateOrConnectWithoutFilesInput
+  connect?: Prisma.CommitWhereUniqueInput
+}
+
+export type CommitUpdateOneRequiredWithoutFilesNestedInput = {
+  create?: Prisma.XOR<Prisma.CommitCreateWithoutFilesInput, Prisma.CommitUncheckedCreateWithoutFilesInput>
+  connectOrCreate?: Prisma.CommitCreateOrConnectWithoutFilesInput
+  upsert?: Prisma.CommitUpsertWithoutFilesInput
+  connect?: Prisma.CommitWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.CommitUpdateToOneWithWhereWithoutFilesInput, Prisma.CommitUpdateWithoutFilesInput>, Prisma.CommitUncheckedUpdateWithoutFilesInput>
+}
+
 export type CommitCreateWithoutRepoInput = {
   id?: string
   sha: string
@@ -410,6 +436,7 @@ export type CommitCreateWithoutRepoInput = {
   authorName?: string | null
   committedAt: Date | string
   summary?: string | null
+  files?: Prisma.CommitFileCreateNestedManyWithoutCommitInput
 }
 
 export type CommitUncheckedCreateWithoutRepoInput = {
@@ -419,6 +446,7 @@ export type CommitUncheckedCreateWithoutRepoInput = {
   authorName?: string | null
   committedAt: Date | string
   summary?: string | null
+  files?: Prisma.CommitFileUncheckedCreateNestedManyWithoutCommitInput
 }
 
 export type CommitCreateOrConnectWithoutRepoInput = {
@@ -460,6 +488,62 @@ export type CommitScalarWhereInput = {
   summary?: Prisma.StringNullableFilter<"Commit"> | string | null
 }
 
+export type CommitCreateWithoutFilesInput = {
+  id?: string
+  sha: string
+  message: string
+  authorName?: string | null
+  committedAt: Date | string
+  summary?: string | null
+  repo: Prisma.RepoCreateNestedOneWithoutCommitsInput
+}
+
+export type CommitUncheckedCreateWithoutFilesInput = {
+  id?: string
+  repoId: string
+  sha: string
+  message: string
+  authorName?: string | null
+  committedAt: Date | string
+  summary?: string | null
+}
+
+export type CommitCreateOrConnectWithoutFilesInput = {
+  where: Prisma.CommitWhereUniqueInput
+  create: Prisma.XOR<Prisma.CommitCreateWithoutFilesInput, Prisma.CommitUncheckedCreateWithoutFilesInput>
+}
+
+export type CommitUpsertWithoutFilesInput = {
+  update: Prisma.XOR<Prisma.CommitUpdateWithoutFilesInput, Prisma.CommitUncheckedUpdateWithoutFilesInput>
+  create: Prisma.XOR<Prisma.CommitCreateWithoutFilesInput, Prisma.CommitUncheckedCreateWithoutFilesInput>
+  where?: Prisma.CommitWhereInput
+}
+
+export type CommitUpdateToOneWithWhereWithoutFilesInput = {
+  where?: Prisma.CommitWhereInput
+  data: Prisma.XOR<Prisma.CommitUpdateWithoutFilesInput, Prisma.CommitUncheckedUpdateWithoutFilesInput>
+}
+
+export type CommitUpdateWithoutFilesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  sha?: Prisma.StringFieldUpdateOperationsInput | string
+  message?: Prisma.StringFieldUpdateOperationsInput | string
+  authorName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  committedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  summary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  repo?: Prisma.RepoUpdateOneRequiredWithoutCommitsNestedInput
+}
+
+export type CommitUncheckedUpdateWithoutFilesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  repoId?: Prisma.StringFieldUpdateOperationsInput | string
+  sha?: Prisma.StringFieldUpdateOperationsInput | string
+  message?: Prisma.StringFieldUpdateOperationsInput | string
+  authorName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  committedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  summary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+}
+
 export type CommitCreateManyRepoInput = {
   id?: string
   sha: string
@@ -476,6 +560,7 @@ export type CommitUpdateWithoutRepoInput = {
   authorName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   committedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   summary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  files?: Prisma.CommitFileUpdateManyWithoutCommitNestedInput
 }
 
 export type CommitUncheckedUpdateWithoutRepoInput = {
@@ -485,6 +570,7 @@ export type CommitUncheckedUpdateWithoutRepoInput = {
   authorName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   committedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   summary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  files?: Prisma.CommitFileUncheckedUpdateManyWithoutCommitNestedInput
 }
 
 export type CommitUncheckedUpdateManyWithoutRepoInput = {
@@ -497,6 +583,35 @@ export type CommitUncheckedUpdateManyWithoutRepoInput = {
 }
 
 
+/**
+ * Count Type CommitCountOutputType
+ */
+
+export type CommitCountOutputType = {
+  files: number
+}
+
+export type CommitCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  files?: boolean | CommitCountOutputTypeCountFilesArgs
+}
+
+/**
+ * CommitCountOutputType without action
+ */
+export type CommitCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the CommitCountOutputType
+   */
+  select?: Prisma.CommitCountOutputTypeSelect<ExtArgs> | null
+}
+
+/**
+ * CommitCountOutputType without action
+ */
+export type CommitCountOutputTypeCountFilesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.CommitFileWhereInput
+}
+
 
 export type CommitSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -507,6 +622,8 @@ export type CommitSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   committedAt?: boolean
   summary?: boolean
   repo?: boolean | Prisma.RepoDefaultArgs<ExtArgs>
+  files?: boolean | Prisma.Commit$filesArgs<ExtArgs>
+  _count?: boolean | Prisma.CommitCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["commit"]>
 
 export type CommitSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -544,6 +661,8 @@ export type CommitSelectScalar = {
 export type CommitOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "repoId" | "sha" | "message" | "authorName" | "committedAt" | "summary", ExtArgs["result"]["commit"]>
 export type CommitInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   repo?: boolean | Prisma.RepoDefaultArgs<ExtArgs>
+  files?: boolean | Prisma.Commit$filesArgs<ExtArgs>
+  _count?: boolean | Prisma.CommitCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type CommitIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   repo?: boolean | Prisma.RepoDefaultArgs<ExtArgs>
@@ -556,6 +675,7 @@ export type $CommitPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs
   name: "Commit"
   objects: {
     repo: Prisma.$RepoPayload<ExtArgs>
+    files: Prisma.$CommitFilePayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -960,6 +1080,7 @@ readonly fields: CommitFieldRefs;
 export interface Prisma__CommitClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   repo<T extends Prisma.RepoDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.RepoDefaultArgs<ExtArgs>>): Prisma.Prisma__RepoClient<runtime.Types.Result.GetResult<Prisma.$RepoPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+  files<T extends Prisma.Commit$filesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Commit$filesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CommitFilePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1394,6 +1515,30 @@ export type CommitDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.Intern
    * Limit how many Commits to delete.
    */
   limit?: number
+}
+
+/**
+ * Commit.files
+ */
+export type Commit$filesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the CommitFile
+   */
+  select?: Prisma.CommitFileSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the CommitFile
+   */
+  omit?: Prisma.CommitFileOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.CommitFileInclude<ExtArgs> | null
+  where?: Prisma.CommitFileWhereInput
+  orderBy?: Prisma.CommitFileOrderByWithRelationInput | Prisma.CommitFileOrderByWithRelationInput[]
+  cursor?: Prisma.CommitFileWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.CommitFileScalarFieldEnum | Prisma.CommitFileScalarFieldEnum[]
 }
 
 /**

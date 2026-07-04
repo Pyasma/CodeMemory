@@ -66,3 +66,8 @@ export type Chat = Prisma.ChatModel
  * 
  */
 export type Message = Prisma.MessageModel
+/**
+ * Model CommitFile
+ * 
+ */
+export type CommitFile = Prisma.CommitFileModel

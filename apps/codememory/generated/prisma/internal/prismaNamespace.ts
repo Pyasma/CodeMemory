@@ -388,7 +388,8 @@ export const ModelName = {
   Repo: 'Repo',
   Commit: 'Commit',
   Chat: 'Chat',
-  Message: 'Message'
+  Message: 'Message',
+  CommitFile: 'CommitFile'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -404,7 +405,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "repo" | "commit" | "chat" | "message"
+    modelProps: "user" | "repo" | "commit" | "chat" | "message" | "commitFile"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -778,6 +779,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    CommitFile: {
+      payload: Prisma.$CommitFilePayload<ExtArgs>
+      fields: Prisma.CommitFileFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.CommitFileFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CommitFilePayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.CommitFileFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CommitFilePayload>
+        }
+        findFirst: {
+          args: Prisma.CommitFileFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CommitFilePayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.CommitFileFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CommitFilePayload>
+        }
+        findMany: {
+          args: Prisma.CommitFileFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CommitFilePayload>[]
+        }
+        create: {
+          args: Prisma.CommitFileCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CommitFilePayload>
+        }
+        createMany: {
+          args: Prisma.CommitFileCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.CommitFileCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CommitFilePayload>[]
+        }
+        delete: {
+          args: Prisma.CommitFileDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CommitFilePayload>
+        }
+        update: {
+          args: Prisma.CommitFileUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CommitFilePayload>
+        }
+        deleteMany: {
+          args: Prisma.CommitFileDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.CommitFileUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.CommitFileUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CommitFilePayload>[]
+        }
+        upsert: {
+          args: Prisma.CommitFileUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CommitFilePayload>
+        }
+        aggregate: {
+          args: Prisma.CommitFileAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateCommitFile>
+        }
+        groupBy: {
+          args: Prisma.CommitFileGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CommitFileGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.CommitFileCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CommitFileCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -881,6 +956,20 @@ export const MessageScalarFieldEnum = {
 } as const
 
 export type MessageScalarFieldEnum = (typeof MessageScalarFieldEnum)[keyof typeof MessageScalarFieldEnum]
+
+
+export const CommitFileScalarFieldEnum = {
+  id: 'id',
+  commitId: 'commitId',
+  filePath: 'filePath',
+  status: 'status',
+  additions: 'additions',
+  deletions: 'deletions',
+  changes: 'changes',
+  patch: 'patch'
+} as const
+
+export type CommitFileScalarFieldEnum = (typeof CommitFileScalarFieldEnum)[keyof typeof CommitFileScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -1083,6 +1172,7 @@ export type GlobalOmitConfig = {
   commit?: Prisma.CommitOmit
   chat?: Prisma.ChatOmit
   message?: Prisma.MessageOmit
+  commitFile?: Prisma.CommitFileOmit
 }
 
 /* Types for Logging */

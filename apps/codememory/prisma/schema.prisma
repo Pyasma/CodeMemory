@@ -58,6 +58,8 @@ model Repo {
 
   commits       Commit[]
   chats       Chat[]
+
+  @@unique([userId, githubRepoId])
 }
 
 model Commit {
@@ -75,9 +77,11 @@ model Commit {
   summary       String? @db.Text
 
   repo          Repo @relation(fields: [repoId], references: [id])
+  files         CommitFile[]
 
   @@index([repoId])
   @@index([sha])
+
 }
 
 model Chat {
@@ -111,3 +115,19 @@ model Message {
   @@index([chatId])
 }
 
+model CommitFile {
+  id          String @id @default(cuid())
+
+  commitId    String
+
+  filePath    String
+  status      String
+
+  additions   Int
+  deletions   Int
+  changes     Int
+
+  patch       String?
+
+  commit      Commit @relation(fields: [commitId], references: [id])
+}

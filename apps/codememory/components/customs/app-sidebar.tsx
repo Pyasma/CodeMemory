@@ -3,6 +3,7 @@
 import * as React from "react"
 import Image from "next/image"
 import { Show } from "@clerk/nextjs"
+import Link from "next/link"
 import { useSidebar } from "@/components/ui/sidebar"
 import {
   Sidebar,
@@ -17,23 +18,25 @@ import {
   SidebarMenuItem,
   SidebarTrigger
 } from "@/components/ui/sidebar"
-import { NewProjectDialog } from "@/components/customs/CreateRepoDialog"
 import { UserProfile } from "./user-profile"
 import { CreditCard } from "lucide-react"
+import { AddRepoDialog } from "./CreateRepoDialog"
 
-const defaultProjects = [
-  { name: "CodeMemory", url: "#" },
-  { name: "My App", url: "#" },
-]
 
-export function AppSidebar() {
-  const [projects, setProjects] = React.useState(defaultProjects)
+type  Project = {
+  id: string
+  name: string
+  githubUrl: string
+}
+
+interface AppSidebarProps {
+  projects?: Project[]
+}
+
+export function AppSidebar({ projects = [] }: AppSidebarProps) {
+
   const { state } = useSidebar()
   const collapsed = state === "collapsed"
-
-  function addProject(name: string) {
-    setProjects((prev) => [...prev, { name, url: "#" }])
-  }
 
   return (
     <Sidebar collapsible="icon">
@@ -65,11 +68,12 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
-                <NewProjectDialog onAdd={addProject} />
+                <AddRepoDialog />
               </SidebarMenuItem>
-              {!collapsed && projects.map((project) => (
-                <SidebarMenuItem key={project.name}>
-                  <SidebarMenuButton render={<a href={project.url} />}>
+
+              {projects.map((project) => (
+                <SidebarMenuItem key={project.id}>
+                  <SidebarMenuButton render={<Link href={`/repo/${project.id}`} />}>
                     <span>{project.name}</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

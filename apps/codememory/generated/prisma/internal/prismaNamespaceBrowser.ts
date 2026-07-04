@@ -55,7 +55,8 @@ export const ModelName = {
   Repo: 'Repo',
   Commit: 'Commit',
   Chat: 'Chat',
-  Message: 'Message'
+  Message: 'Message',
+  CommitFile: 'CommitFile'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -138,6 +139,20 @@ export const MessageScalarFieldEnum = {
 } as const
 
 export type MessageScalarFieldEnum = (typeof MessageScalarFieldEnum)[keyof typeof MessageScalarFieldEnum]
+
+
+export const CommitFileScalarFieldEnum = {
+  id: 'id',
+  commitId: 'commitId',
+  filePath: 'filePath',
+  status: 'status',
+  additions: 'additions',
+  deletions: 'deletions',
+  changes: 'changes',
+  patch: 'patch'
+} as const
+
+export type CommitFileScalarFieldEnum = (typeof CommitFileScalarFieldEnum)[keyof typeof CommitFileScalarFieldEnum]
 
 
 export const SortOrder = {

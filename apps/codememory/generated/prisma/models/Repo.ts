@@ -296,6 +296,7 @@ export type RepoOrderByWithRelationInput = {
 
 export type RepoWhereUniqueInput = Prisma.AtLeast<{
   id?: string
+  userId_githubRepoId?: Prisma.RepoUserIdGithubRepoIdCompoundUniqueInput
   AND?: Prisma.RepoWhereInput | Prisma.RepoWhereInput[]
   OR?: Prisma.RepoWhereInput[]
   NOT?: Prisma.RepoWhereInput | Prisma.RepoWhereInput[]
@@ -312,7 +313,7 @@ export type RepoWhereUniqueInput = Prisma.AtLeast<{
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
   commits?: Prisma.CommitListRelationFilter
   chats?: Prisma.ChatListRelationFilter
-}, "id">
+}, "id" | "userId_githubRepoId">
 
 export type RepoOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
@@ -463,6 +464,11 @@ export type RepoListRelationFilter = {
 
 export type RepoOrderByRelationAggregateInput = {
   _count?: Prisma.SortOrder
+}
+
+export type RepoUserIdGithubRepoIdCompoundUniqueInput = {
+  userId: number
+  githubRepoId: string
 }
 
 export type RepoCountOrderByAggregateInput = {

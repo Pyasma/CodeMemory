@@ -112,6 +112,7 @@ export const CommitScalarFieldEnum = {
   sha: 'sha',
   message: 'message',
   authorName: 'authorName',
+  authorImage: 'authorImage',
   committedAt: 'committedAt',
   summary: 'summary'
 } as const

@@ -10,11 +10,11 @@ export default async function RepoLayout({
   const repos = await Fetch()
 
   return (
-    <SidebarProvider className="min-h-screen">
+    <SidebarProvider className="min-h-screen bg-[#f7f5f1]">
       <AppSidebar projects={repos} />
-      <main className="min-h-0 flex-1 overflow-hidden p-6 sm:p-8 md:ml-4 md:mt-4 md:mr-4 md:mb-4">
-        <div className="mx-auto flex h-full w-full max-w-5xl flex-col">
-          <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden pr-2">
+      <main className="min-h-0 flex-1 overflow-hidden px-4 py-4 sm:px-6 lg:px-8">
+        <div className="flex h-full w-full flex-col overflow-hidden rounded-[2rem] border border-border/60 bg-background/80 shadow-[0_20px_60px_rgba(0,0,0,0.06)] backdrop-blur">
+          <div className="min-h-0 flex-1 overflow-hidden">
             {children}
           </div>
         </div>

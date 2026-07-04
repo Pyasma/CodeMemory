@@ -41,11 +41,23 @@ export async function FetchRepoContent(repoId: string) {
         include: {
             commits: {
                 include: {
-                files: true,
+                  files: true,
                 },
                 orderBy: {
-                committedAt: "desc",
+                  committedAt: "desc",
                 },
+            },
+            chats: {
+              orderBy: {
+                updatedAt: "desc",
+              },
+              include: {
+                messages: {
+                  orderBy: {
+                    createdAt: "asc",
+                  },
+                },
+              },
             },
         },
     })

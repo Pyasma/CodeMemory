@@ -5,6 +5,7 @@ import { auth } from "@clerk/nextjs/server"
 import { prisma } from "@/db/prisma"
 import { githubClient } from "@/lib/github-client"
 import { parseRepoUrl } from "@/lib/url-parser"
+import { syncRepoMemory } from "@/lib/repo-memory"
 import { NextResponse } from "next/server"
 
 export async function POST(req: Request) {
@@ -176,12 +177,23 @@ export async function POST(req: Request) {
       data: commitFilesData.flat(),
     })
 
+    let memorySyncError: string | null = null
+
+    try {
+      await syncRepoMemory(repository.id)
+    } catch (error) {
+      memorySyncError =
+        error instanceof Error ? error.message : "Failed to sync repo memory"
+      console.warn("[fetching-repo] memory sync failed:", memorySyncError)
+    }
 
     return NextResponse.json(
       {
         success: true,
         message: "Repo correctly fetched",
         repository,
+        memorySynced: memorySyncError === null,
+        memorySyncError,
       },
       { status: 201 }
     )

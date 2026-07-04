@@ -72,6 +72,8 @@ model Commit {
 
   authorName    String?
 
+  authorImage   String?
+
   committedAt   DateTime
 
   summary       String? @db.Text

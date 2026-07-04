@@ -30,6 +30,7 @@ export type CommitMinAggregateOutputType = {
   sha: string | null
   message: string | null
   authorName: string | null
+  authorImage: string | null
   committedAt: Date | null
   summary: string | null
 }
@@ -40,6 +41,7 @@ export type CommitMaxAggregateOutputType = {
   sha: string | null
   message: string | null
   authorName: string | null
+  authorImage: string | null
   committedAt: Date | null
   summary: string | null
 }
@@ -50,6 +52,7 @@ export type CommitCountAggregateOutputType = {
   sha: number
   message: number
   authorName: number
+  authorImage: number
   committedAt: number
   summary: number
   _all: number
@@ -62,6 +65,7 @@ export type CommitMinAggregateInputType = {
   sha?: true
   message?: true
   authorName?: true
+  authorImage?: true
   committedAt?: true
   summary?: true
 }
@@ -72,6 +76,7 @@ export type CommitMaxAggregateInputType = {
   sha?: true
   message?: true
   authorName?: true
+  authorImage?: true
   committedAt?: true
   summary?: true
 }
@@ -82,6 +87,7 @@ export type CommitCountAggregateInputType = {
   sha?: true
   message?: true
   authorName?: true
+  authorImage?: true
   committedAt?: true
   summary?: true
   _all?: true
@@ -165,6 +171,7 @@ export type CommitGroupByOutputType = {
   sha: string
   message: string
   authorName: string | null
+  authorImage: string | null
   committedAt: Date
   summary: string | null
   _count: CommitCountAggregateOutputType | null
@@ -196,6 +203,7 @@ export type CommitWhereInput = {
   sha?: Prisma.StringFilter<"Commit"> | string
   message?: Prisma.StringFilter<"Commit"> | string
   authorName?: Prisma.StringNullableFilter<"Commit"> | string | null
+  authorImage?: Prisma.StringNullableFilter<"Commit"> | string | null
   committedAt?: Prisma.DateTimeFilter<"Commit"> | Date | string
   summary?: Prisma.StringNullableFilter<"Commit"> | string | null
   repo?: Prisma.XOR<Prisma.RepoScalarRelationFilter, Prisma.RepoWhereInput>
@@ -208,6 +216,7 @@ export type CommitOrderByWithRelationInput = {
   sha?: Prisma.SortOrder
   message?: Prisma.SortOrder
   authorName?: Prisma.SortOrderInput | Prisma.SortOrder
+  authorImage?: Prisma.SortOrderInput | Prisma.SortOrder
   committedAt?: Prisma.SortOrder
   summary?: Prisma.SortOrderInput | Prisma.SortOrder
   repo?: Prisma.RepoOrderByWithRelationInput
@@ -223,6 +232,7 @@ export type CommitWhereUniqueInput = Prisma.AtLeast<{
   repoId?: Prisma.StringFilter<"Commit"> | string
   message?: Prisma.StringFilter<"Commit"> | string
   authorName?: Prisma.StringNullableFilter<"Commit"> | string | null
+  authorImage?: Prisma.StringNullableFilter<"Commit"> | string | null
   committedAt?: Prisma.DateTimeFilter<"Commit"> | Date | string
   summary?: Prisma.StringNullableFilter<"Commit"> | string | null
   repo?: Prisma.XOR<Prisma.RepoScalarRelationFilter, Prisma.RepoWhereInput>
@@ -235,6 +245,7 @@ export type CommitOrderByWithAggregationInput = {
   sha?: Prisma.SortOrder
   message?: Prisma.SortOrder
   authorName?: Prisma.SortOrderInput | Prisma.SortOrder
+  authorImage?: Prisma.SortOrderInput | Prisma.SortOrder
   committedAt?: Prisma.SortOrder
   summary?: Prisma.SortOrderInput | Prisma.SortOrder
   _count?: Prisma.CommitCountOrderByAggregateInput
@@ -251,6 +262,7 @@ export type CommitScalarWhereWithAggregatesInput = {
   sha?: Prisma.StringWithAggregatesFilter<"Commit"> | string
   message?: Prisma.StringWithAggregatesFilter<"Commit"> | string
   authorName?: Prisma.StringNullableWithAggregatesFilter<"Commit"> | string | null
+  authorImage?: Prisma.StringNullableWithAggregatesFilter<"Commit"> | string | null
   committedAt?: Prisma.DateTimeWithAggregatesFilter<"Commit"> | Date | string
   summary?: Prisma.StringNullableWithAggregatesFilter<"Commit"> | string | null
 }
@@ -260,6 +272,7 @@ export type CommitCreateInput = {
   sha: string
   message: string
   authorName?: string | null
+  authorImage?: string | null
   committedAt: Date | string
   summary?: string | null
   repo: Prisma.RepoCreateNestedOneWithoutCommitsInput
@@ -272,6 +285,7 @@ export type CommitUncheckedCreateInput = {
   sha: string
   message: string
   authorName?: string | null
+  authorImage?: string | null
   committedAt: Date | string
   summary?: string | null
   files?: Prisma.CommitFileUncheckedCreateNestedManyWithoutCommitInput
@@ -282,6 +296,7 @@ export type CommitUpdateInput = {
   sha?: Prisma.StringFieldUpdateOperationsInput | string
   message?: Prisma.StringFieldUpdateOperationsInput | string
   authorName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  authorImage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   committedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   summary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   repo?: Prisma.RepoUpdateOneRequiredWithoutCommitsNestedInput
@@ -294,6 +309,7 @@ export type CommitUncheckedUpdateInput = {
   sha?: Prisma.StringFieldUpdateOperationsInput | string
   message?: Prisma.StringFieldUpdateOperationsInput | string
   authorName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  authorImage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   committedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   summary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   files?: Prisma.CommitFileUncheckedUpdateManyWithoutCommitNestedInput
@@ -305,6 +321,7 @@ export type CommitCreateManyInput = {
   sha: string
   message: string
   authorName?: string | null
+  authorImage?: string | null
   committedAt: Date | string
   summary?: string | null
 }
@@ -314,6 +331,7 @@ export type CommitUpdateManyMutationInput = {
   sha?: Prisma.StringFieldUpdateOperationsInput | string
   message?: Prisma.StringFieldUpdateOperationsInput | string
   authorName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  authorImage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   committedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   summary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
@@ -324,6 +342,7 @@ export type CommitUncheckedUpdateManyInput = {
   sha?: Prisma.StringFieldUpdateOperationsInput | string
   message?: Prisma.StringFieldUpdateOperationsInput | string
   authorName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  authorImage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   committedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   summary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
@@ -344,6 +363,7 @@ export type CommitCountOrderByAggregateInput = {
   sha?: Prisma.SortOrder
   message?: Prisma.SortOrder
   authorName?: Prisma.SortOrder
+  authorImage?: Prisma.SortOrder
   committedAt?: Prisma.SortOrder
   summary?: Prisma.SortOrder
 }
@@ -354,6 +374,7 @@ export type CommitMaxOrderByAggregateInput = {
   sha?: Prisma.SortOrder
   message?: Prisma.SortOrder
   authorName?: Prisma.SortOrder
+  authorImage?: Prisma.SortOrder
   committedAt?: Prisma.SortOrder
   summary?: Prisma.SortOrder
 }
@@ -364,6 +385,7 @@ export type CommitMinOrderByAggregateInput = {
   sha?: Prisma.SortOrder
   message?: Prisma.SortOrder
   authorName?: Prisma.SortOrder
+  authorImage?: Prisma.SortOrder
   committedAt?: Prisma.SortOrder
   summary?: Prisma.SortOrder
 }
@@ -434,6 +456,7 @@ export type CommitCreateWithoutRepoInput = {
   sha: string
   message: string
   authorName?: string | null
+  authorImage?: string | null
   committedAt: Date | string
   summary?: string | null
   files?: Prisma.CommitFileCreateNestedManyWithoutCommitInput
@@ -444,6 +467,7 @@ export type CommitUncheckedCreateWithoutRepoInput = {
   sha: string
   message: string
   authorName?: string | null
+  authorImage?: string | null
   committedAt: Date | string
   summary?: string | null
   files?: Prisma.CommitFileUncheckedCreateNestedManyWithoutCommitInput
@@ -484,6 +508,7 @@ export type CommitScalarWhereInput = {
   sha?: Prisma.StringFilter<"Commit"> | string
   message?: Prisma.StringFilter<"Commit"> | string
   authorName?: Prisma.StringNullableFilter<"Commit"> | string | null
+  authorImage?: Prisma.StringNullableFilter<"Commit"> | string | null
   committedAt?: Prisma.DateTimeFilter<"Commit"> | Date | string
   summary?: Prisma.StringNullableFilter<"Commit"> | string | null
 }
@@ -493,6 +518,7 @@ export type CommitCreateWithoutFilesInput = {
   sha: string
   message: string
   authorName?: string | null
+  authorImage?: string | null
   committedAt: Date | string
   summary?: string | null
   repo: Prisma.RepoCreateNestedOneWithoutCommitsInput
@@ -504,6 +530,7 @@ export type CommitUncheckedCreateWithoutFilesInput = {
   sha: string
   message: string
   authorName?: string | null
+  authorImage?: string | null
   committedAt: Date | string
   summary?: string | null
 }
@@ -529,6 +556,7 @@ export type CommitUpdateWithoutFilesInput = {
   sha?: Prisma.StringFieldUpdateOperationsInput | string
   message?: Prisma.StringFieldUpdateOperationsInput | string
   authorName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  authorImage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   committedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   summary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   repo?: Prisma.RepoUpdateOneRequiredWithoutCommitsNestedInput
@@ -540,6 +568,7 @@ export type CommitUncheckedUpdateWithoutFilesInput = {
   sha?: Prisma.StringFieldUpdateOperationsInput | string
   message?: Prisma.StringFieldUpdateOperationsInput | string
   authorName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  authorImage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   committedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   summary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
@@ -549,6 +578,7 @@ export type CommitCreateManyRepoInput = {
   sha: string
   message: string
   authorName?: string | null
+  authorImage?: string | null
   committedAt: Date | string
   summary?: string | null
 }
@@ -558,6 +588,7 @@ export type CommitUpdateWithoutRepoInput = {
   sha?: Prisma.StringFieldUpdateOperationsInput | string
   message?: Prisma.StringFieldUpdateOperationsInput | string
   authorName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  authorImage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   committedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   summary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   files?: Prisma.CommitFileUpdateManyWithoutCommitNestedInput
@@ -568,6 +599,7 @@ export type CommitUncheckedUpdateWithoutRepoInput = {
   sha?: Prisma.StringFieldUpdateOperationsInput | string
   message?: Prisma.StringFieldUpdateOperationsInput | string
   authorName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  authorImage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   committedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   summary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   files?: Prisma.CommitFileUncheckedUpdateManyWithoutCommitNestedInput
@@ -578,6 +610,7 @@ export type CommitUncheckedUpdateManyWithoutRepoInput = {
   sha?: Prisma.StringFieldUpdateOperationsInput | string
   message?: Prisma.StringFieldUpdateOperationsInput | string
   authorName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  authorImage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   committedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   summary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
@@ -619,6 +652,7 @@ export type CommitSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   sha?: boolean
   message?: boolean
   authorName?: boolean
+  authorImage?: boolean
   committedAt?: boolean
   summary?: boolean
   repo?: boolean | Prisma.RepoDefaultArgs<ExtArgs>
@@ -632,6 +666,7 @@ export type CommitSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extens
   sha?: boolean
   message?: boolean
   authorName?: boolean
+  authorImage?: boolean
   committedAt?: boolean
   summary?: boolean
   repo?: boolean | Prisma.RepoDefaultArgs<ExtArgs>
@@ -643,6 +678,7 @@ export type CommitSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extens
   sha?: boolean
   message?: boolean
   authorName?: boolean
+  authorImage?: boolean
   committedAt?: boolean
   summary?: boolean
   repo?: boolean | Prisma.RepoDefaultArgs<ExtArgs>
@@ -654,11 +690,12 @@ export type CommitSelectScalar = {
   sha?: boolean
   message?: boolean
   authorName?: boolean
+  authorImage?: boolean
   committedAt?: boolean
   summary?: boolean
 }
 
-export type CommitOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "repoId" | "sha" | "message" | "authorName" | "committedAt" | "summary", ExtArgs["result"]["commit"]>
+export type CommitOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "repoId" | "sha" | "message" | "authorName" | "authorImage" | "committedAt" | "summary", ExtArgs["result"]["commit"]>
 export type CommitInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   repo?: boolean | Prisma.RepoDefaultArgs<ExtArgs>
   files?: boolean | Prisma.Commit$filesArgs<ExtArgs>
@@ -683,6 +720,7 @@ export type $CommitPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs
     sha: string
     message: string
     authorName: string | null
+    authorImage: string | null
     committedAt: Date
     summary: string | null
   }, ExtArgs["result"]["commit"]>
@@ -1115,6 +1153,7 @@ export interface CommitFieldRefs {
   readonly sha: Prisma.FieldRef<"Commit", 'String'>
   readonly message: Prisma.FieldRef<"Commit", 'String'>
   readonly authorName: Prisma.FieldRef<"Commit", 'String'>
+  readonly authorImage: Prisma.FieldRef<"Commit", 'String'>
   readonly committedAt: Prisma.FieldRef<"Commit", 'DateTime'>
   readonly summary: Prisma.FieldRef<"Commit", 'String'>
 }

@@ -1,4 +1,4 @@
-import { RepoMain } from "@/components/customs/Repo-Card";
+import { RepoTabs } from "@/components/customs/repo-tabs";
 import { FetchRepoContent } from "@/lib/fetch-projects";
 
 
@@ -14,5 +14,5 @@ export default async function RepoContent({
       return null
     }
 
-    return <RepoMain repo={content} />
+    return <RepoTabs repo={content} />
 }

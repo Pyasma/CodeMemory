@@ -39,6 +39,13 @@ export async function POST(
         repoId: repo.id,
         title: `${repo.owner}/${repo.name}`,
       },
+      include: {
+        messages: {
+          orderBy: {
+            createdAt: "asc",
+          },
+        },
+      },
     })
 
     return NextResponse.json(
@@ -58,4 +65,3 @@ export async function POST(
     )
   }
 }
-

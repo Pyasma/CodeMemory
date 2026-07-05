@@ -2,7 +2,7 @@ import "server-only"
 
 import { GoogleGenAI } from "@google/genai"
 
-const DEFAULT_MODEL = "gemini-embedding-001"
+const DEFAULT_MODELS = ["gemini-embedding-2", "gemini-embedding-001"]
 const DEFAULT_DIMENSIONS = 768
 
 type EmbedTextInput = {
@@ -32,30 +32,45 @@ function getClient() {
 
 export async function embedText({ text, isQuery = false }: EmbedTextInput) {
   const client = getClient()
-  const model = process.env.GEMINI_EMBEDDING_MODEL ?? DEFAULT_MODEL
+  const models = [
+    process.env.GEMINI_EMBEDDING_MODEL,
+    ...DEFAULT_MODELS,
+  ].filter((value): value is string => Boolean(value))
   const outputDimensionality = Number(
     process.env.GEMINI_EMBEDDING_DIMENSIONS ?? DEFAULT_DIMENSIONS
   )
 
-  const result = await client.models.embedContent({
-    model,
-    contents: text,
-    config: {
-      taskType: isQuery ? "CODE_RETRIEVAL_QUERY" : "RETRIEVAL_DOCUMENT",
-      outputDimensionality,
-    },
-  })
+  let lastError: unknown
 
-  const embedding = result.embeddings?.[0]?.values
+  for (const model of models) {
+    try {
+      const result = await client.models.embedContent({
+        model,
+        contents: text,
+        config: {
+          taskType: isQuery ? "CODE_RETRIEVAL_QUERY" : "RETRIEVAL_DOCUMENT",
+          outputDimensionality,
+        },
+      })
 
-  if (!embedding?.length) {
-    throw new Error("Gemini embedding request returned no vector")
+      const embedding = result.embeddings?.[0]?.values
+
+      if (!embedding?.length) {
+        throw new Error("Gemini embedding request returned no vector")
+      }
+
+      return normalize(embedding)
+    } catch (error) {
+      lastError = error
+      console.warn("[gemini] embedContent failed for model:", model, error)
+    }
   }
 
-  return normalize(embedding)
+  throw lastError instanceof Error
+    ? lastError
+    : new Error("All Gemini embedding models failed")
 }
 
 export function toVectorLiteral(values: number[]) {
   return `[${values.map((value) => Number(value).toString()).join(",")}]`
 }
-

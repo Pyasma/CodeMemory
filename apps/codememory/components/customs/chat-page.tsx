@@ -1,8 +1,8 @@
 "use client"
 
 import * as React from "react"
-import { useRouter } from "next/navigation"
 import { ArrowUpRight, Bot, Sparkles, User } from "lucide-react"
+import ReactMarkdown from "react-markdown"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -40,6 +40,7 @@ type ChatPageProps = {
     messages: ChatMessage[]
   }
   embedded?: boolean
+  onMessagesPersisted?: (messages: ChatMessage[]) => void
 }
 
 function formatDate(value: string) {
@@ -77,7 +78,39 @@ function MessageBubble({
             : "border-foreground/10 bg-foreground text-background"
         }`}
       >
-        <div className="whitespace-pre-wrap text-sm leading-6">{content}</div>
+        {isAssistant ? (
+          <ReactMarkdown
+            components={{
+              p: ({ children }) => (
+                <p className="whitespace-pre-wrap text-sm leading-6 text-inherit">
+                  {children}
+                </p>
+              ),
+              ul: ({ children }) => <ul className="ml-5 list-disc space-y-1">{children}</ul>,
+              ol: ({ children }) => <ol className="ml-5 list-decimal space-y-1">{children}</ol>,
+              li: ({ children }) => <li className="text-sm leading-6">{children}</li>,
+              strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+              code: ({ children, className }) => (
+                <code
+                  className={`rounded bg-black/5 px-1.5 py-0.5 font-mono text-[0.85em] ${
+                    className ?? ""
+                  }`}
+                >
+                  {children}
+                </code>
+              ),
+              pre: ({ children }) => (
+                <pre className="overflow-x-auto rounded-2xl bg-black/5 p-3 font-mono text-xs leading-5">
+                  {children}
+                </pre>
+              ),
+            }}
+          >
+            {content}
+          </ReactMarkdown>
+        ) : (
+          <div className="whitespace-pre-wrap text-sm leading-6">{content}</div>
+        )}
         <div
           className={`mt-2 text-[11px] uppercase tracking-[0.18em] ${
             isAssistant ? "text-muted-foreground" : "text-background/65"
@@ -96,17 +129,30 @@ function MessageBubble({
   )
 }
 
-export function ChatPageView({ chat, embedded = false }: ChatPageProps) {
-  const router = useRouter()
+export function ChatPageView({
+  chat,
+  embedded = false,
+  onMessagesPersisted,
+}: ChatPageProps) {
   const [messages, setMessages] = React.useState(chat.messages)
   const [draft, setDraft] = React.useState("")
   const [isSending, setIsSending] = React.useState(false)
   const [memoryHits, setMemoryHits] = React.useState<MemoryHit[]>([])
   const bottomRef = React.useRef<HTMLDivElement | null>(null)
+  const hasMountedRef = React.useRef(false)
 
   React.useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages, memoryHits])
+
+  React.useEffect(() => {
+    if (!hasMountedRef.current) {
+      hasMountedRef.current = true
+      return
+    }
+
+    onMessagesPersisted?.(messages)
+  }, [messages, onMessagesPersisted])
 
   async function handleSend() {
     const text = draft.trim()
@@ -140,24 +186,37 @@ export function ChatPageView({ chat, embedded = false }: ChatPageProps) {
         reply?: string
         message?: string
         memoryHits?: MemoryHit[]
+        messages?: ChatMessage[]
       }
 
       if (!response.ok || !data.success) {
         throw new Error(data.message ?? "Failed to send message")
       }
 
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: `temp-assistant-${Date.now()}`,
-          role: "assistant",
-          content: data.reply ?? "No response returned.",
-          createdAt: new Date().toISOString(),
-        },
-      ])
+      if (data.messages?.length) {
+        setMessages((current) => {
+          const nextMessages = [
+            ...current.filter((entry) => !entry.id.startsWith("temp-user-")),
+            ...data.messages!,
+          ]
+          return nextMessages
+        })
+      } else {
+        setMessages((current) => {
+          const nextMessages = [
+            ...current.slice(0, -1),
+            {
+              id: `temp-assistant-${Date.now()}`,
+              role: "assistant",
+              content: data.reply ?? "No response returned.",
+              createdAt: new Date().toISOString(),
+            },
+          ]
+          return nextMessages
+        })
+      }
 
       setMemoryHits(data.memoryHits ?? [])
-      router.refresh()
     } catch {
       setMessages((prev) => prev.slice(0, -1))
       setDraft(text)

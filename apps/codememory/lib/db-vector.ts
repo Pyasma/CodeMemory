@@ -1,6 +1,7 @@
 import "server-only"
 
 import { Pool } from "pg"
+import { normalizePostgresUrl } from "./postgres-url"
 
 const globalForPool = globalThis as unknown as {
   vectorPool?: Pool
@@ -9,10 +10,9 @@ const globalForPool = globalThis as unknown as {
 export const vectorPool =
   globalForPool.vectorPool ??
   new Pool({
-    connectionString: process.env.DATABASE_URL,
+    connectionString: normalizePostgresUrl(process.env.DATABASE_URL),
   })
 
 if (process.env.NODE_ENV !== "production") {
   globalForPool.vectorPool = vectorPool
 }
-

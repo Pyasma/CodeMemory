@@ -1,10 +1,11 @@
 import "server-only"
 
-import { randomUUID } from "node:crypto"
+import { createHash } from "node:crypto"
+import { existsSync } from "node:fs"
+import { spawn } from "node:child_process"
+import { resolve } from "node:path"
 
 import { prisma } from "@/db/prisma"
-import { vectorPool } from "@/lib/db-vector"
-import { embedText, toVectorLiteral } from "@/lib/embeddings"
 
 type RepoForMemory = {
   id: string
@@ -41,14 +42,66 @@ type RepoMemoryMatch = {
   metadata: Record<string, unknown>
 }
 
+type RepoMemoryDocument = {
+  sourceType: string
+  sourceId: string
+  title: string
+  content: string
+  metadata: Record<string, unknown>
+}
+
+type RepoMemoryStoredState = {
+  datasetName: string | null
+  syncSignature: string | null
+  documentCount: number
+  syncedAt: Date | null
+}
+
+type RepoMemorySnapshot = {
+  repo: RepoForMemory
+  documents: RepoMemoryDocument[]
+  signature: string
+}
+
+type CogneeBridgeResponse<T> = {
+  ok: boolean
+  error?: string
+  [key: string]: unknown
+} & T
+
 const MAX_TEXT_CHARS = 6000
+const DEFAULT_COGNEE_SYNC_TABLE = "repo_memory_syncs"
 
 function truncateText(text: string) {
   if (text.length <= MAX_TEXT_CHARS) {
     return text
   }
 
-  return `${text.slice(0, MAX_TEXT_CHARS)}`
+  return text.slice(0, MAX_TEXT_CHARS)
+}
+
+function sortCommits(repo: RepoForMemory["commits"]) {
+  return [...repo].sort((left, right) => {
+    const dateDelta = right.committedAt.getTime() - left.committedAt.getTime()
+
+    if (dateDelta !== 0) {
+      return dateDelta
+    }
+
+    return left.sha.localeCompare(right.sha)
+  })
+}
+
+function sortFiles(commit: RepoForMemory["commits"][number]["files"]) {
+  return [...commit].sort((left, right) => {
+    const pathDelta = left.filePath.localeCompare(right.filePath)
+
+    if (pathDelta !== 0) {
+      return pathDelta
+    }
+
+    return left.status.localeCompare(right.status)
+  })
 }
 
 function buildMemoryDocuments(repo: RepoForMemory) {
@@ -59,13 +112,7 @@ function buildMemoryDocuments(repo: RepoForMemory) {
     `Total commits: ${repo.totalCommits}`,
   ].join("\n")
 
-  const documents: Array<{
-    sourceType: string
-    sourceId: string
-    title: string
-    content: string
-    metadata: Record<string, unknown>
-  }> = [
+  const documents: RepoMemoryDocument[] = [
     {
       sourceType: "repo",
       sourceId: repo.id,
@@ -79,8 +126,9 @@ function buildMemoryDocuments(repo: RepoForMemory) {
     },
   ]
 
-  for (const commit of repo.commits) {
-    const fileList = commit.files.map((file) => `${file.status}: ${file.filePath}`).join("\n")
+  for (const commit of sortCommits(repo.commits)) {
+    const files = sortFiles(commit.files)
+    const fileList = files.map((file) => `${file.status}: ${file.filePath}`).join("\n")
     const commitText = [
       `Commit: ${commit.sha}`,
       `Message: ${commit.message}`,
@@ -103,7 +151,7 @@ function buildMemoryDocuments(repo: RepoForMemory) {
       },
     })
 
-    for (const file of commit.files) {
+    for (const file of files) {
       const fileText = [
         `Commit: ${commit.sha}`,
         `File: ${file.filePath}`,
@@ -133,37 +181,34 @@ function buildMemoryDocuments(repo: RepoForMemory) {
   return documents
 }
 
-async function ensureRepoMemoryTable() {
-  await vectorPool.query(`
-    CREATE EXTENSION IF NOT EXISTS vector;
-
-    CREATE TABLE IF NOT EXISTS repo_embeddings (
-      id TEXT PRIMARY KEY,
-      repo_id TEXT NOT NULL REFERENCES "Repo"(id) ON DELETE CASCADE,
-      source_type TEXT NOT NULL,
-      source_id TEXT NOT NULL,
-      title TEXT NOT NULL,
-      content TEXT NOT NULL,
-      metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
-      embedding vector(768) NOT NULL,
-      created_at TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      updated_at TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
-    );
-
-    CREATE INDEX IF NOT EXISTS repo_embeddings_repo_id_idx
-      ON repo_embeddings (repo_id);
-
-    CREATE INDEX IF NOT EXISTS repo_embeddings_embedding_idx
-      ON repo_embeddings
-      USING ivfflat (embedding vector_cosine_ops)
-      WITH (lists = 100);
-  `)
+function buildMemorySignature(documents: RepoMemoryDocument[]) {
+  return createHash("sha256")
+    .update(
+      JSON.stringify(
+        documents.map((document) => ({
+          sourceType: document.sourceType,
+          sourceId: document.sourceId,
+          title: document.title,
+          content: document.content,
+          metadata: document.metadata,
+        }))
+      )
+    )
+    .digest("hex")
 }
 
-export async function syncRepoMemory(repoId: string) {
-  await ensureRepoMemoryTable()
+function buildRepoMemorySnapshot(repo: RepoForMemory): RepoMemorySnapshot {
+  const documents = buildMemoryDocuments(repo)
 
-  const repo = (await prisma.repo.findFirst({
+  return {
+    repo,
+    documents,
+    signature: buildMemorySignature(documents),
+  }
+}
+
+async function loadRepoForMemory(repoId: string) {
+  return (await prisma.repo.findFirst({
     where: { id: repoId },
     include: {
       commits: {
@@ -176,97 +221,409 @@ export async function syncRepoMemory(repoId: string) {
       },
     },
   })) as RepoForMemory | null
+}
+
+function getWorkspaceRoot() {
+  const cwd = process.cwd()
+
+  if (existsSync(resolve(cwd, "..", "cognee-setup", "main.py"))) {
+    return resolve(cwd, "..", "cognee-setup")
+  }
+
+  if (existsSync(resolve(cwd, "apps", "cognee-setup", "main.py"))) {
+    return resolve(cwd, "apps", "cognee-setup")
+  }
+
+  return resolve(cwd, "..", "cognee-setup")
+}
+
+function getCogneePythonBinary() {
+  if (process.env.COGNEE_PYTHON_BIN) {
+    return process.env.COGNEE_PYTHON_BIN
+  }
+
+  const workspaceRoot = getWorkspaceRoot()
+  const candidate = resolve(workspaceRoot, ".venv", "bin", "python")
+
+  if (existsSync(candidate)) {
+    return candidate
+  }
+
+  return "python3"
+}
+
+function getCogneeScriptPath() {
+  return resolve(getWorkspaceRoot(), "main.py")
+}
+
+function getCogneeEnv() {
+  const geminiApiKey =
+    process.env.COGNEE_GEMINI_API_KEY ?? process.env.GEMINI_API_KEY ?? ""
+
+  return {
+    ...process.env,
+    ENABLE_BACKEND_ACCESS_CONTROL:
+      process.env.COGNEE_ENABLE_BACKEND_ACCESS_CONTROL ?? "false",
+    LLM_PROVIDER: process.env.COGNEE_LLM_PROVIDER ?? "gemini",
+    LLM_MODEL:
+      process.env.COGNEE_LLM_MODEL ??
+      process.env.GEMINI_MODEL ??
+      "gemini/gemini-3.1-flash-lite",
+    LLM_API_KEY:
+      process.env.COGNEE_LLM_API_KEY ??
+      process.env.GEMINI_API_KEY ??
+      geminiApiKey,
+    EMBEDDING_PROVIDER: process.env.COGNEE_EMBEDDING_PROVIDER ?? "gemini",
+    EMBEDDING_MODEL:
+      process.env.COGNEE_EMBEDDING_MODEL ??
+      process.env.GEMINI_EMBEDDING_MODEL ??
+      "gemini/gemini-embedding-2",
+    EMBEDDING_API_KEY:
+      process.env.COGNEE_EMBEDDING_API_KEY ??
+      process.env.GEMINI_API_KEY ??
+      geminiApiKey,
+  }
+}
+
+async function runCogneeBridge<T>(payload: Record<string, unknown>) {
+  const pythonBinary = getCogneePythonBinary()
+  const scriptPath = getCogneeScriptPath()
+  const child = spawn(pythonBinary, [scriptPath], {
+    env: getCogneeEnv(),
+    stdio: ["pipe", "pipe", "pipe"],
+  })
+
+  let stdout = ""
+  let stderr = ""
+
+  child.stdout.on("data", (chunk) => {
+    stdout += chunk.toString()
+  })
+
+  child.stderr.on("data", (chunk) => {
+    stderr += chunk.toString()
+  })
+
+  child.stdin.end(`${JSON.stringify(payload)}\n`)
+
+  const exitCode = await new Promise<number>((resolveExit, rejectExit) => {
+    child.on("error", rejectExit)
+    child.on("close", resolveExit)
+  })
+
+  const output = stdout.trim()
+
+  if (exitCode !== 0) {
+    throw new Error(
+      stderr.trim() ||
+        output ||
+        `Cognee bridge failed with exit code ${exitCode}`
+    )
+  }
+
+  if (!output) {
+    throw new Error("Cognee bridge returned no output")
+  }
+
+  const parsed = JSON.parse(output) as CogneeBridgeResponse<T>
+
+  if (!parsed.ok) {
+    throw new Error(parsed.error ?? "Cognee bridge request failed")
+  }
+
+  return parsed
+}
+
+async function ensureRepoMemoryTable() {
+  await prisma.$executeRawUnsafe(`
+    CREATE TABLE IF NOT EXISTS ${DEFAULT_COGNEE_SYNC_TABLE} (
+      repo_id TEXT PRIMARY KEY REFERENCES "Repo"(id) ON DELETE CASCADE,
+      dataset_name TEXT NOT NULL,
+      sync_signature TEXT NOT NULL,
+      document_count INT NOT NULL,
+      synced_at TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+  `)
+
+  await prisma.$executeRawUnsafe(`
+    CREATE INDEX IF NOT EXISTS repo_memory_syncs_dataset_name_idx
+      ON ${DEFAULT_COGNEE_SYNC_TABLE} (dataset_name)
+  `)
+}
+
+async function getStoredRepoMemoryState(
+  repoId: string
+): Promise<RepoMemoryStoredState | null> {
+  const row = await prisma.$queryRawUnsafe<
+    Array<{
+      dataset_name: string
+      sync_signature: string
+      document_count: number
+      synced_at: Date
+    }>
+  >(
+    `
+      SELECT dataset_name, sync_signature, document_count, synced_at
+      FROM ${DEFAULT_COGNEE_SYNC_TABLE}
+      WHERE repo_id = $1
+      LIMIT 1
+    `,
+    repoId
+  )
+
+  return row[0]
+    ? {
+        datasetName: row[0].dataset_name,
+        syncSignature: row[0].sync_signature,
+        documentCount: row[0].document_count,
+        syncedAt: row[0].synced_at,
+      }
+    : null
+}
+
+async function upsertRepoMemoryState(snapshot: RepoMemorySnapshot) {
+  const datasetName = getRepoDatasetName(snapshot.repo.id)
+
+  await prisma.$executeRawUnsafe(
+    `
+      INSERT INTO ${DEFAULT_COGNEE_SYNC_TABLE} (
+        repo_id,
+        dataset_name,
+        sync_signature,
+        document_count,
+        synced_at
+      ) VALUES ($1, $2, $3, $4, NOW())
+      ON CONFLICT (repo_id) DO UPDATE SET
+        dataset_name = EXCLUDED.dataset_name,
+        sync_signature = EXCLUDED.sync_signature,
+        document_count = EXCLUDED.document_count,
+        synced_at = EXCLUDED.synced_at
+    `,
+    snapshot.repo.id,
+    datasetName,
+    snapshot.signature,
+    snapshot.documents.length
+  )
+
+  await prisma.repo.update({
+    where: { id: snapshot.repo.id },
+    data: {
+      indexedAt: new Date(),
+    },
+  })
+}
+
+function getRepoDatasetName(repoId: string) {
+  return `repo_${repoId}`
+}
+
+function buildCogneeDocuments(documents: RepoMemoryDocument[]) {
+  return documents.map((document) => {
+    const metadataText = Object.entries(document.metadata).length
+      ? `\nMetadata:\n${JSON.stringify(document.metadata, null, 2)}`
+      : ""
+
+    return [
+      `[${document.sourceType}] ${document.title}`,
+      document.content,
+      metadataText,
+    ]
+      .filter(Boolean)
+      .join("\n")
+  })
+}
+
+async function writeRepoMemorySnapshot(snapshot: RepoMemorySnapshot) {
+  const datasetName = getRepoDatasetName(snapshot.repo.id)
+  const documents = buildCogneeDocuments(snapshot.documents)
+
+  await runCogneeBridge({
+    action: "sync",
+    repoId: snapshot.repo.id,
+    datasetName,
+    documents,
+  })
+
+  await upsertRepoMemoryState(snapshot)
+
+  return {
+    repoId: snapshot.repo.id,
+    documentsIndexed: snapshot.documents.length,
+  }
+}
+
+export async function syncRepoMemory(repoId: string) {
+  await ensureRepoMemoryTable()
+
+  const repo = await loadRepoForMemory(repoId)
 
   if (!repo) {
     throw new Error("Repo not found")
   }
 
-  const documents = buildMemoryDocuments(repo)
+  return writeRepoMemorySnapshot(buildRepoMemorySnapshot(repo))
+}
 
-  await vectorPool.query(`DELETE FROM repo_embeddings WHERE repo_id = $1`, [repoId])
+export async function ensureRepoMemorySynced(repoId: string) {
+  await ensureRepoMemoryTable()
 
-  for (const document of documents) {
-    const embedding = await embedText({
-      text: document.content,
-      isQuery: false,
-    })
+  const repo = await loadRepoForMemory(repoId)
 
-    await vectorPool.query(
-      `
-        INSERT INTO repo_embeddings (
-          id,
-          repo_id,
-          source_type,
-          source_id,
-          title,
-          content,
-          metadata,
-          embedding,
-          created_at,
-          updated_at
-        ) VALUES (
-          $8,
-          $1,
-          $2,
-          $3,
-          $4,
-          $5,
-          $6::jsonb,
-          $7::vector,
-          NOW(),
-          NOW()
-        )
-      `,
-      [
-        repoId,
-        document.sourceType,
-        document.sourceId,
-        document.title,
-        document.content,
-        JSON.stringify(document.metadata),
-        toVectorLiteral(embedding),
-        randomUUID(),
-      ]
-    )
+  if (!repo) {
+    throw new Error("Repo not found")
   }
 
-  await prisma.repo.update({
-    where: { id: repoId },
-    data: {
-      indexedAt: new Date(),
-    },
-  })
+  const snapshot = buildRepoMemorySnapshot(repo)
+  const storedState = await getStoredRepoMemoryState(repoId)
+  const datasetName = getRepoDatasetName(repoId)
+
+  if (
+    storedState &&
+    storedState.datasetName === datasetName &&
+    storedState.documentCount === snapshot.documents.length &&
+    storedState.syncSignature === snapshot.signature
+  ) {
+    return {
+      repoId,
+      documentsIndexed: snapshot.documents.length,
+      synced: true,
+      refreshed: false,
+    }
+  }
+
+  const syncResult = await writeRepoMemorySnapshot(snapshot)
 
   return {
-    repoId,
-    documentsIndexed: documents.length,
+    ...syncResult,
+    synced: true,
+    refreshed: true,
   }
 }
 
-export async function searchRepoMemory(repoId: string, query: string, limit = 5) {
-  await ensureRepoMemoryTable()
+function normalizeCogneeHits(hits: unknown[]): RepoMemoryMatch[] {
+  return hits.map((hit, index) => {
+    if (!hit || typeof hit !== "object") {
+      return {
+        sourceType: "cognee",
+        sourceId: `cognee-${index + 1}`,
+        title: `Result ${index + 1}`,
+        content: String(hit ?? ""),
+        similarity: 1,
+        metadata: {},
+      }
+    }
 
-  const embedding = await embedText({
-    text: query,
-    isQuery: true,
+    const record = hit as Record<string, unknown>
+    const content =
+      typeof record.content === "string"
+        ? record.content
+        : typeof record.text === "string"
+          ? record.text
+          : typeof record.answer === "string"
+            ? record.answer
+            : typeof record.context === "string"
+              ? record.context
+              : JSON.stringify(record)
+
+    const sourceType =
+      typeof record.sourceType === "string"
+        ? record.sourceType
+        : typeof record.source_type === "string"
+          ? record.source_type
+          : typeof record.kind === "string"
+            ? record.kind
+            : typeof record.source === "string"
+              ? record.source
+              : "cognee"
+
+    const sourceId =
+      typeof record.sourceId === "string"
+        ? record.sourceId
+        : typeof record.source_id === "string"
+          ? record.source_id
+          : typeof record.id === "string"
+            ? record.id
+            : `cognee-${index + 1}`
+
+    const title =
+      typeof record.title === "string"
+        ? record.title
+        : typeof record.name === "string"
+          ? record.name
+          : typeof record.node_name === "string"
+            ? record.node_name
+            : `Result ${index + 1}`
+
+    const similarityValue = record.similarity ?? record.score ?? record.relevance
+    const similarity =
+      typeof similarityValue === "number"
+        ? similarityValue
+        : typeof similarityValue === "string"
+          ? Number(similarityValue) || 1
+          : 1
+
+    return {
+      sourceType,
+      sourceId,
+      title,
+      content,
+      similarity,
+      metadata: Object.fromEntries(
+        Object.entries(record).filter(
+          ([key]) =>
+            ![
+              "content",
+              "text",
+              "answer",
+              "context",
+              "sourceType",
+              "source_type",
+              "kind",
+              "source",
+              "sourceId",
+              "source_id",
+              "id",
+              "title",
+              "name",
+              "node_name",
+              "similarity",
+              "score",
+              "relevance",
+            ].includes(key)
+        )
+      ),
+    }
   })
+}
 
-  const { rows } = await vectorPool.query<RepoMemoryMatch>(
-    `
-      SELECT
-        source_type AS "sourceType",
-        source_id AS "sourceId",
-        title,
-        content,
-        metadata,
-        1 - (embedding <=> $2::vector) AS similarity
-      FROM repo_embeddings
-      WHERE repo_id = $1
-      ORDER BY embedding <=> $2::vector
-      LIMIT $3
-    `,
-    [repoId, toVectorLiteral(embedding), limit]
-  )
+export async function searchRepoMemory(repoId: string, query: string, limit = 5) {
+  try {
+    await ensureRepoMemorySynced(repoId)
+  } catch (error) {
+    console.warn(
+      "[repo-memory] sync failed before recall:",
+      error instanceof Error ? error.message : "Unknown error"
+    )
+    return []
+  }
 
-  return rows
+  try {
+    const result = await runCogneeBridge<{
+      hits?: unknown[]
+    }>({
+      action: "recall",
+      repoId,
+      datasetName: getRepoDatasetName(repoId),
+      query,
+      topK: limit,
+    })
+
+    return normalizeCogneeHits(result.hits ?? [])
+  } catch (error) {
+    console.warn(
+      "[repo-memory] recall failed:",
+      error instanceof Error ? error.message : "Unknown error"
+    )
+    return []
+  }
 }

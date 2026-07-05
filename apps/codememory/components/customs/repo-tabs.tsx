@@ -48,7 +48,7 @@ function toChatView(chat: RepoChat, repo: RepoTabsProps["repo"]) {
       totalCommits: repo.totalCommits,
       indexedAt: repo.indexedAt,
     },
-    messages: chat.messages.map((message) => ({
+    messages: (chat.messages ?? []).map((message) => ({
       id: message.id,
       role: message.role,
       content: message.content,
@@ -62,13 +62,26 @@ function toChatView(chat: RepoChat, repo: RepoTabsProps["repo"]) {
 
 export function RepoTabs({ repo }: RepoTabsProps) {
   const [activeTab, setActiveTab] = React.useState<"repo" | "chat">("repo")
-  const [chats, setChats] = React.useState(repo.chats)
+  const [chats, setChats] = React.useState(repo.chats ?? [])
   const [activeChatId, setActiveChatId] = React.useState<string | null>(
-    repo.chats[0]?.id ?? null
+    repo.chats?.[0]?.id ?? null
   )
   const [isCreatingChat, setIsCreatingChat] = React.useState(false)
 
   const activeChat = chats.find((chat) => chat.id === activeChatId) ?? null
+
+  function handlePersistedMessages(chatId: string, messages: RepoChat["messages"]) {
+    setChats((prev) =>
+      prev.map((chat) =>
+        chat.id === chatId
+          ? {
+              ...chat,
+              messages,
+            }
+          : chat
+      )
+    )
+  }
 
   function openChatTab() {
     if (!activeChatId && chats[0]) {
@@ -100,8 +113,10 @@ export function RepoTabs({ repo }: RepoTabsProps) {
         throw new Error(data.message ?? "Failed to create chat")
       }
 
-      setChats((prev) => [data.chat as RepoChat, ...prev])
-      setActiveChatId(data.chat.id)
+      const nextChat = data.chat as RepoChat
+
+      setChats((prev) => [nextChat, ...prev])
+      setActiveChatId(nextChat.id)
       setActiveTab("chat")
     } finally {
       setIsCreatingChat(false)
@@ -189,7 +204,14 @@ export function RepoTabs({ repo }: RepoTabsProps) {
             </div>
 
             <div className="min-h-0 flex-1 overflow-hidden">
-              <ChatPageView chat={selectedChat} embedded />
+              <ChatPageView
+                key={selectedChat.id}
+                chat={selectedChat}
+                embedded
+                onMessagesPersisted={(messages) =>
+                  handlePersistedMessages(selectedChat.id, messages)
+                }
+              />
             </div>
           </div>
         ) : (

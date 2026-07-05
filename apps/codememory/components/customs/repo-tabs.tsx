@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Plus, MessagesSquare, X, Trash2, Brain } from "lucide-react"
+import { Plus, MessagesSquare, X, Trash2, Brain, RefreshCw } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { MemoryGraph } from "@/components/customs/MemoryGraph"
 
@@ -71,6 +71,7 @@ export function RepoTabs({ repo }: RepoTabsProps) {
   )
   const [isCreatingChat, setIsCreatingChat] = React.useState(false)
   const [isDeletingRepo, setIsDeletingRepo] = React.useState(false)
+  const [isSyncingRepo, setIsSyncingRepo] = React.useState(false)
   const [initialQuery, setInitialQuery] = React.useState("")
   const router = useRouter()
 
@@ -186,6 +187,37 @@ export function RepoTabs({ repo }: RepoTabsProps) {
     }
   }
 
+  async function handleSyncRepo() {
+    if (isSyncingRepo) {
+      return
+    }
+
+    setIsSyncingRepo(true)
+
+    try {
+      const response = await fetch(`/api/repos/${repo.id}/sync`, {
+        method: "POST",
+      })
+
+      const data = (await response.json().catch(() => null)) as
+        | { success?: boolean; message?: string }
+        | null
+
+      if (!response.ok || !data?.success) {
+        throw new Error(data?.message ?? "Failed to sync repository")
+      }
+
+      toast.success("Repository synced with the latest commits")
+      router.refresh()
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to sync repository"
+      )
+    } finally {
+      setIsSyncingRepo(false)
+    }
+  }
+
   function handleQueryCommit(sha: string) {
     const commit = repo.commits.find((c) => c.sha === sha)
     const text = `Explain the changes in commit ${sha.slice(0, 7)}: "${commit?.message ?? ""}"`
@@ -239,6 +271,18 @@ export function RepoTabs({ repo }: RepoTabsProps) {
         </div>
 
         <div className="flex items-center gap-3">
+          <Button
+            type="button"
+            onClick={() => void handleSyncRepo()}
+            disabled={isSyncingRepo}
+            className="rounded-full border border-zinc-800 bg-zinc-900/80 text-zinc-100 hover:bg-zinc-850 hover:text-white cursor-pointer inline-flex items-center gap-2 px-4 py-2 text-sm font-medium"
+          >
+            <RefreshCw
+              className={`h-4 w-4 ${isSyncingRepo ? "animate-spin" : ""}`}
+            />
+            {isSyncingRepo ? "Syncing..." : "Sync"}
+          </Button>
+
           {activeTab === "chat" && (
             <Button
               type="button"

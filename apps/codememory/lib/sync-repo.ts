@@ -5,17 +5,13 @@ import { syncRepoMemory } from "@/lib/repo-memory"
 async function countFiles(
   github: ReturnType<typeof githubClient>,
   owner: string,
-  repo: string
+  repo: string,
+  branchName: string
 ) {
-  const { data: repoDetails } = await github.rest.repos.get({
-    owner,
-    repo,
-  })
-
   const { data: branch } = await github.rest.repos.getBranch({
     owner,
     repo,
-    branch: repoDetails.default_branch,
+    branch: branchName,
   })
 
   const { data: commit } = await github.rest.git.getCommit({
@@ -37,11 +33,13 @@ async function countFiles(
 async function countCommits(
   github: ReturnType<typeof githubClient>,
   owner: string,
-  repo: string
+  repo: string,
+  branch: string
 ) {
   const response = await github.rest.repos.listCommits({
     owner,
     repo,
+    sha: branch,
     per_page: 1,
   })
 
@@ -70,17 +68,23 @@ export async function syncRepository(repoId: string) {
   const owner = repository.owner
   const repo = repository.name
   const github = githubClient()
+  const { data: repoDetails } = await github.rest.repos.get({
+    owner,
+    repo,
+  })
+  const defaultBranch = repoDetails.default_branch
 
   // 1. Fetch total files and commits counts
   const [totalFiles, totalCommits] = await Promise.all([
-    countFiles(github, owner, repo),
-    countCommits(github, owner, repo),
+    countFiles(github, owner, repo, defaultBranch),
+    countCommits(github, owner, repo, defaultBranch),
   ])
 
   // 2. Fetch list of 100 commits from github
   const commitsResponse = await github.rest.repos.listCommits({
     owner,
     repo,
+    sha: defaultBranch,
     per_page: 100,
   })
 

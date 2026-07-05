@@ -32,9 +32,9 @@ export function UserProfile({ compact = false, variant = "sidebar" }: UserProfil
           render={
             <button
               type="button"
-              className="inline-flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-zinc-300 bg-white shadow-sm transition-colors hover:bg-zinc-50"
+              className="inline-flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-zinc-800 bg-zinc-900/50 shadow-sm transition-colors hover:bg-zinc-800 hover:text-white"
             >
-              <div className="relative flex h-8 w-8 items-center justify-center overflow-hidden rounded-full border border-border bg-zinc-200 text-sm font-medium text-zinc-700">
+              <div className="relative flex h-8 w-8 items-center justify-center overflow-hidden rounded-full border border-zinc-800 bg-zinc-900 text-sm font-medium text-zinc-300">
                 {isSignedIn && isLoaded && user?.imageUrl ? (
                   <Image
                     src={user.imageUrl}
@@ -57,8 +57,8 @@ export function UserProfile({ compact = false, variant = "sidebar" }: UserProfil
               type="button"
               className={
                 compact
-                  ? "h-10 w-10 justify-center rounded-full border border-sidebar-border bg-gray-50 p-0 hover:bg-gray-200"
-                  : "w-full justify-start gap-3 rounded-xl border border-sidebar-border bg-gray-50 px-5 py-6 text-left hover:bg-gray-200"
+                  ? "h-10 w-10 justify-center rounded-full border border-zinc-800 bg-zinc-900/50 p-0 hover:bg-zinc-800 text-white"
+                  : "w-full justify-start gap-3 rounded-xl border border-zinc-800 bg-zinc-900/40 px-5 py-6 text-left hover:bg-zinc-900/80 text-white"
               }
             >
               {compact ? (
@@ -68,7 +68,7 @@ export function UserProfile({ compact = false, variant = "sidebar" }: UserProfil
                 </>
               ) : (
                 <>
-                  <div className="relative flex h-8 w-8 items-center justify-center overflow-hidden rounded-full border border-border bg-zinc-200 text-sm font-medium text-zinc-700">
+                  <div className="relative flex h-8 w-8 items-center justify-center overflow-hidden rounded-full border border-zinc-800 bg-zinc-900 text-sm font-medium text-zinc-300">
                     {isSignedIn && isLoaded && user?.imageUrl ? (
                       <Image
                         src={user.imageUrl}
@@ -82,10 +82,10 @@ export function UserProfile({ compact = false, variant = "sidebar" }: UserProfil
                     )}
                   </div>
                   <div className="flex min-w-0 flex-1 flex-col items-start">
-                    <span className="truncate font-medium">
+                    <span className="truncate font-medium text-white">
                       {isSignedIn && isLoaded ? name : "Guest"}
                     </span>
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-[10px] text-zinc-500 font-mono uppercase tracking-wider">
                       Account menu
                     </span>
                   </div>
@@ -96,29 +96,27 @@ export function UserProfile({ compact = false, variant = "sidebar" }: UserProfil
         />
       )}
 
-      <DropdownMenuContent align="start" className="w-56">
+      <DropdownMenuContent align="start" className="w-56 border-zinc-800 bg-zinc-950 text-white">
         <DropdownMenuGroup>
           <DropdownMenuLabel>Account</DropdownMenuLabel>
-          <DropdownMenuSeparator />
+          <DropdownMenuSeparator className="bg-zinc-850" />
 
           <DropdownMenuItem
             onClick={() => {
               openUserProfile()
             }}
+            className="hover:bg-zinc-900 focus:bg-zinc-900 cursor-pointer"
           >
-            Profile
+            Manage profile
           </DropdownMenuItem>
-
-          <DropdownMenuItem>Billing</DropdownMenuItem>
-
-          <DropdownMenuSeparator />
 
           <DropdownMenuItem
             onClick={() => {
-              void signOut()
+              signOut()
             }}
+            className="text-red-400 hover:bg-zinc-900 focus:bg-zinc-900 cursor-pointer"
           >
-            Log out
+            Sign out
           </DropdownMenuItem>
         </DropdownMenuGroup>
       </DropdownMenuContent>

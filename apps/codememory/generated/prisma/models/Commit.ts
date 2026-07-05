@@ -225,11 +225,12 @@ export type CommitOrderByWithRelationInput = {
 
 export type CommitWhereUniqueInput = Prisma.AtLeast<{
   id?: string
-  sha?: string
+  repoId_sha?: Prisma.CommitRepoIdShaCompoundUniqueInput
   AND?: Prisma.CommitWhereInput | Prisma.CommitWhereInput[]
   OR?: Prisma.CommitWhereInput[]
   NOT?: Prisma.CommitWhereInput | Prisma.CommitWhereInput[]
   repoId?: Prisma.StringFilter<"Commit"> | string
+  sha?: Prisma.StringFilter<"Commit"> | string
   message?: Prisma.StringFilter<"Commit"> | string
   authorName?: Prisma.StringNullableFilter<"Commit"> | string | null
   authorImage?: Prisma.StringNullableFilter<"Commit"> | string | null
@@ -237,7 +238,7 @@ export type CommitWhereUniqueInput = Prisma.AtLeast<{
   summary?: Prisma.StringNullableFilter<"Commit"> | string | null
   repo?: Prisma.XOR<Prisma.RepoScalarRelationFilter, Prisma.RepoWhereInput>
   files?: Prisma.CommitFileListRelationFilter
-}, "id" | "sha">
+}, "id" | "repoId_sha">
 
 export type CommitOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
@@ -355,6 +356,11 @@ export type CommitListRelationFilter = {
 
 export type CommitOrderByRelationAggregateInput = {
   _count?: Prisma.SortOrder
+}
+
+export type CommitRepoIdShaCompoundUniqueInput = {
+  repoId: string
+  sha: string
 }
 
 export type CommitCountOrderByAggregateInput = {

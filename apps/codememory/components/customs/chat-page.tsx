@@ -1,13 +1,11 @@
 "use client"
 
 import * as React from "react"
-import { ArrowUpRight, Bot, Sparkles, User } from "lucide-react"
+import { ArrowUpRight, Bot, Sparkles, User, Plus, Smile, SendHorizontal } from "lucide-react"
 import ReactMarkdown from "react-markdown"
 
-import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
-import { Textarea } from "@/components/ui/textarea"
 
 type ChatMessage = {
   id: string
@@ -40,6 +38,7 @@ type ChatPageProps = {
     messages: ChatMessage[]
   }
   embedded?: boolean
+  initialQuery?: string
   onMessagesPersisted?: (messages: ChatMessage[]) => void
 }
 
@@ -64,67 +63,64 @@ function MessageBubble({
   const isAssistant = role === "assistant"
 
   return (
-    <div className={`flex gap-3 ${isAssistant ? "" : "justify-end"}`}>
-      {isAssistant && (
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl border border-border bg-muted text-foreground">
-          <Bot className="h-4 w-4" />
-        </div>
-      )}
-
-      <div
-        className={`max-w-[min(46rem,85%)] rounded-3xl border px-4 py-3 shadow-sm ${
-          isAssistant
-            ? "border-border bg-card text-foreground"
-            : "border-foreground/10 bg-foreground text-background"
-        }`}
-      >
+    <div className="flex items-start gap-4 py-4 px-2 border-b border-white/[0.02]">
+      {/* Avatar Circle */}
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-zinc-800 bg-zinc-900/50 text-white shadow-sm">
         {isAssistant ? (
-          <ReactMarkdown
-            components={{
-              p: ({ children }) => (
-                <p className="whitespace-pre-wrap text-sm leading-6 text-inherit">
-                  {children}
-                </p>
-              ),
-              ul: ({ children }) => <ul className="ml-5 list-disc space-y-1">{children}</ul>,
-              ol: ({ children }) => <ol className="ml-5 list-decimal space-y-1">{children}</ol>,
-              li: ({ children }) => <li className="text-sm leading-6">{children}</li>,
-              strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
-              code: ({ children, className }) => (
-                <code
-                  className={`rounded bg-black/5 px-1.5 py-0.5 font-mono text-[0.85em] ${
-                    className ?? ""
-                  }`}
-                >
-                  {children}
-                </code>
-              ),
-              pre: ({ children }) => (
-                <pre className="overflow-x-auto rounded-2xl bg-black/5 p-3 font-mono text-xs leading-5">
-                  {children}
-                </pre>
-              ),
-            }}
-          >
-            {content}
-          </ReactMarkdown>
+          <Bot className="h-5 w-5 text-indigo-400" />
         ) : (
-          <div className="whitespace-pre-wrap text-sm leading-6">{content}</div>
+          <User className="h-5 w-5 text-zinc-300" />
         )}
-        <div
-          className={`mt-2 text-[11px] uppercase tracking-[0.18em] ${
-            isAssistant ? "text-muted-foreground" : "text-background/65"
-          }`}
-        >
-          {formatDate(createdAt)}
-        </div>
       </div>
 
-      {!isAssistant && (
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl border border-foreground/10 bg-background text-foreground">
-          <User className="h-4 w-4" />
+      {/* Message Content Area */}
+      <div className="flex-1 min-w-0 space-y-1.5">
+        {/* Header: Name and Date */}
+        <div className="flex items-baseline gap-2">
+          <span className="text-sm font-semibold text-white">
+            {isAssistant ? "CodeMemory Assistant" : "You"}
+          </span>
+          <span className="text-[11px] text-zinc-500 font-medium">
+            {formatDate(createdAt)}
+          </span>
         </div>
-      )}
+
+        {/* Message Text / Markdown */}
+        <div className="text-sm leading-7 text-zinc-300">
+          {isAssistant ? (
+            <ReactMarkdown
+              components={{
+                p: ({ children }) => (
+                  <p className="whitespace-pre-wrap text-sm leading-7 text-zinc-300">
+                    {children}
+                  </p>
+                ),
+                ul: ({ children }) => <ul className="ml-5 list-disc space-y-1.5 py-1">{children}</ul>,
+                ol: ({ children }) => <ol className="ml-5 list-decimal space-y-1.5 py-1">{children}</ol>,
+                li: ({ children }) => <li className="text-sm leading-7">{children}</li>,
+                strong: ({ children }) => <strong className="font-semibold text-white">{children}</strong>,
+                code: ({ children, className }) => (
+                  <code
+                    className={`rounded bg-zinc-950 px-1.5 py-0.5 font-mono text-[0.85em] text-zinc-200 ring-1 ring-zinc-850 ${className ?? ""
+                      }`}
+                  >
+                    {children}
+                  </code>
+                ),
+                pre: ({ children }) => (
+                  <pre className="overflow-x-auto rounded-2xl bg-zinc-950 p-3.5 font-mono text-xs leading-5 border border-zinc-850 my-2">
+                    {children}
+                  </pre>
+                ),
+              }}
+            >
+              {content}
+            </ReactMarkdown>
+          ) : (
+            <div className="whitespace-pre-wrap">{content}</div>
+          )}
+        </div>
+      </div>
     </div>
   )
 }
@@ -132,6 +128,7 @@ function MessageBubble({
 export function ChatPageView({
   chat,
   embedded = false,
+  initialQuery,
   onMessagesPersisted,
 }: ChatPageProps) {
   const [messages, setMessages] = React.useState(chat.messages)
@@ -140,6 +137,17 @@ export function ChatPageView({
   const [memoryHits, setMemoryHits] = React.useState<MemoryHit[]>([])
   const bottomRef = React.useRef<HTMLDivElement | null>(null)
   const hasMountedRef = React.useRef(false)
+
+  React.useEffect(() => {
+    if (initialQuery) {
+      setDraft(initialQuery)
+    }
+  }, [initialQuery])
+
+  const onMessagesPersistedRef = React.useRef(onMessagesPersisted)
+  React.useEffect(() => {
+    onMessagesPersistedRef.current = onMessagesPersisted
+  })
 
   React.useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -151,8 +159,8 @@ export function ChatPageView({
       return
     }
 
-    onMessagesPersisted?.(messages)
-  }, [messages, onMessagesPersisted])
+    onMessagesPersistedRef.current?.(messages)
+  }, [messages])
 
   async function handleSend() {
     const text = draft.trim()
@@ -226,14 +234,14 @@ export function ChatPageView({
   }
 
   const shellClass = embedded
-    ? "relative flex h-full min-h-0 overflow-hidden rounded-[2rem] border border-border/70 bg-background/85 shadow-[0_20px_60px_rgba(0,0,0,0.06)] backdrop-blur text-foreground"
-    : "relative min-h-[calc(100vh-72px)] overflow-hidden bg-[radial-gradient(circle_at_top_left,_rgba(0,0,0,0.08),_transparent_32%),linear-gradient(180deg,#f7f5f1_0%,#f3eee7_100%)] text-foreground"
+    ? "relative flex h-full min-h-0 overflow-hidden rounded-[2rem] border border-zinc-850 bg-zinc-900/40 shadow-[0_20px_60px_rgba(0,0,0,0.25)] backdrop-blur-md text-zinc-100"
+    : "relative min-h-[calc(100vh-72px)] overflow-hidden bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.03),_transparent_40%),linear-gradient(180deg,#09090b_0%,#09090b_100%)] text-zinc-100"
 
   return (
     <div className={shellClass}>
       {!embedded && (
-        <div className="pointer-events-none absolute inset-0 opacity-70">
-          <div className="absolute inset-x-0 top-0 h-56 bg-[linear-gradient(rgba(17,17,17,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(17,17,17,0.04)_1px,transparent_1px)] bg-[size:30px_30px]" />
+        <div className="pointer-events-none absolute inset-0 opacity-40">
+          <div className="absolute inset-x-0 top-0 h-56 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:30px_30px]" />
         </div>
       )}
 
@@ -246,16 +254,16 @@ export function ChatPageView({
       >
         <section className="flex min-h-0 flex-1 flex-col overflow-hidden">
           {!embedded && (
-            <div className="flex items-start justify-between gap-4 border-b border-border px-5 py-5">
+            <div className="flex items-start justify-between gap-4 border-b border-zinc-800 px-5 py-5">
               <div>
-                <div className="inline-flex items-center gap-2 rounded-full border border-border bg-muted px-3 py-1 text-xs font-medium uppercase tracking-[0.22em] text-muted-foreground">
-                  <Sparkles className="h-3.5 w-3.5" />
+                <div className="inline-flex items-center gap-2 rounded-full border border-zinc-800 bg-zinc-900/50 px-3 py-1 text-[10px] font-mono uppercase tracking-[0.22em] text-zinc-400">
+                  <Sparkles className="h-3.5 w-3.5 text-indigo-450" />
                   Repo chat
                 </div>
-                <h1 className="mt-3 text-2xl font-semibold tracking-tight text-foreground">
+                <h1 className="mt-3 text-2xl font-bold tracking-tight text-white">
                   {chat.title ?? `${chat.repo.owner}/${chat.repo.name}`}
                 </h1>
-                <p className="mt-1 text-sm text-muted-foreground">
+                <p className="mt-1 text-sm text-zinc-400">
                   Ask about commits, files, diffs, or repo history.
                 </p>
               </div>
@@ -264,7 +272,7 @@ export function ChatPageView({
                 href={chat.repo.githubUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-2 rounded-full border border-border bg-muted px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted/80"
+                className="inline-flex items-center gap-2 rounded-full border border-zinc-800 bg-zinc-900 px-4 py-2 text-xs font-semibold text-zinc-300 transition-colors hover:bg-zinc-850 hover:text-white"
               >
                 Open GitHub
                 <ArrowUpRight className="h-4 w-4" />
@@ -272,17 +280,17 @@ export function ChatPageView({
             </div>
           )}
 
-          <div className="flex-1 space-y-4 overflow-y-auto px-5 py-5">
+          <div className="flex-1 space-y-2 overflow-y-auto px-5 py-5">
             {messages.length === 0 ? (
               <div className="flex h-full min-h-[320px] items-center justify-center">
-                <Card className="max-w-lg border-dashed bg-muted/40">
+                <Card className="max-w-lg border-dashed border-zinc-850 bg-zinc-900/40 text-white">
                   <CardHeader>
-                    <CardTitle>Start the conversation</CardTitle>
-                    <CardDescription>
+                    <CardTitle className="text-white">Start the conversation</CardTitle>
+                    <CardDescription className="text-zinc-450">
                       Ask what changed, how a feature works, or where a bug was introduced.
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="text-sm text-muted-foreground">
+                  <CardContent className="text-xs text-zinc-400">
                     The assistant will pull semantic matches from repo memory and answer in context.
                   </CardContent>
                 </Card>
@@ -300,96 +308,103 @@ export function ChatPageView({
             <div ref={bottomRef} />
           </div>
 
-          <Separator />
+          <Separator className="bg-zinc-800" />
 
+          {/* Slack/Discord Inspired Chat Input Area */}
           <div className="p-4">
-            <Card className="border-border/70 bg-background">
-              <CardContent className="p-4">
-                <Textarea
-                  value={draft}
-                  onChange={(e) => setDraft(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
-                      e.preventDefault()
-                      void handleSend()
-                    }
-                  }}
-                  placeholder="Ask about this repo..."
-                  className="min-h-28 resize-none border-border bg-muted/30 text-sm"
-                />
-                <div className="mt-3 flex items-center justify-between gap-3">
-                  <p className="text-xs text-muted-foreground">
-                    Shift+Enter for a new line.
-                  </p>
-                  <Button onClick={() => void handleSend()} disabled={isSending || !draft.trim()}>
-                    {isSending ? "Thinking..." : "Send"}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+            <div className="flex items-center gap-3 rounded-2xl border border-zinc-850 bg-zinc-950/60 p-2 pl-4 pr-2 shadow-inner">
+              {/* Text Input */}
+              <input
+                type="text"
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault()
+                    void handleSend()
+                  }
+                }}
+                placeholder="Type your message..."
+                className="flex-1 min-w-0 bg-transparent border-0 py-2 px-2 text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:ring-0"
+              />
+
+              {/* Send Button */}
+              <button
+                onClick={() => void handleSend()}
+                disabled={isSending || !draft.trim()}
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-zinc-900 text-zinc-300 border border-zinc-800 hover:bg-zinc-800 hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                aria-label="Send message"
+              >
+                {isSending ? (
+                  <span className="h-4 w-4 animate-spin rounded-full border border-zinc-700 border-t-white" />
+                ) : (
+                  <SendHorizontal className="h-4 w-4" />
+                )}
+              </button>
+            </div>
           </div>
         </section>
 
         {!embedded && (
           <aside className="flex flex-col gap-4">
-            <Card className="border-border/70 bg-background/85 backdrop-blur">
+            <Card className="border-zinc-800 bg-zinc-900/30 text-white backdrop-blur">
               <CardHeader>
-                <CardTitle>Repository</CardTitle>
-                <CardDescription>
+                <CardTitle className="text-white">Repository</CardTitle>
+                <CardDescription className="text-zinc-450">
                   Memory is synced from this repo and used for recall.
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-3 text-sm">
+              <CardContent className="space-y-3 text-xs">
                 <div className="flex items-center justify-between gap-3">
-                  <span className="text-muted-foreground">Repo</span>
-                  <span className="font-medium text-foreground">
+                  <span className="text-zinc-400">Repo</span>
+                  <span className="font-semibold text-white">
                     {chat.repo.owner}/{chat.repo.name}
                   </span>
                 </div>
                 <div className="flex items-center justify-between gap-3">
-                  <span className="text-muted-foreground">Commits</span>
-                  <span className="font-medium text-foreground">{chat.repo.totalCommits}</span>
+                  <span className="text-zinc-400">Commits</span>
+                  <span className="font-semibold text-white">{chat.repo.totalCommits}</span>
                 </div>
                 <div className="flex items-center justify-between gap-3">
-                  <span className="text-muted-foreground">Files</span>
-                  <span className="font-medium text-foreground">{chat.repo.totalFiles}</span>
+                  <span className="text-zinc-400">Files</span>
+                  <span className="font-semibold text-white">{chat.repo.totalFiles}</span>
                 </div>
                 <div className="flex items-center justify-between gap-3">
-                  <span className="text-muted-foreground">Memory</span>
-                  <span className="font-medium text-foreground">
+                  <span className="text-zinc-400">Memory</span>
+                  <span className="font-semibold text-white">
                     {chat.repo.indexedAt ? "Indexed" : "Not indexed"}
                   </span>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="border-border/70 bg-background/85 backdrop-blur">
+            <Card className="border-zinc-800 bg-zinc-900/30 text-white backdrop-blur">
               <CardHeader>
-                <CardTitle>Latest memory hits</CardTitle>
-                <CardDescription>
+                <CardTitle className="text-white">Latest memory hits</CardTitle>
+                <CardDescription className="text-zinc-450">
                   Matches from the last assistant lookup.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
                 {memoryHits.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-xs text-zinc-500">
                     Ask a question to see relevant repo memory here.
                   </p>
                 ) : (
                   memoryHits.map((hit) => (
-                    <div key={`${hit.sourceType}-${hit.sourceId}`} className="rounded-2xl border border-border bg-muted/40 p-3">
+                    <div key={`${hit.sourceType}-${hit.sourceId}`} className="rounded-2xl border border-zinc-800 bg-zinc-950/30 p-3">
                       <div className="flex items-center justify-between gap-2">
-                        <div className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+                        <div className="text-[10px] font-semibold font-mono uppercase tracking-[0.18em] text-indigo-400">
                           {hit.sourceType}
                         </div>
-                        <div className="text-xs text-muted-foreground">
+                        <div className="text-[10px] text-zinc-500 font-mono">
                           {(hit.similarity * 100).toFixed(0)}%
                         </div>
                       </div>
-                      <div className="mt-1 text-sm font-medium text-foreground">
+                      <div className="mt-1 text-xs font-semibold text-white">
                         {hit.title}
                       </div>
-                      <p className="mt-2 line-clamp-6 whitespace-pre-wrap text-sm leading-6 text-muted-foreground">
+                      <p className="mt-2 line-clamp-6 whitespace-pre-wrap text-[11px] font-mono leading-5 text-zinc-400">
                         {hit.content}
                       </p>
                     </div>

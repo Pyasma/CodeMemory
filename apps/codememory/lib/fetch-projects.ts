@@ -1,42 +1,60 @@
 import "server-only"
 
 import { prisma } from "@/db/prisma"
-import { auth } from "@clerk/nextjs/server"
+import { auth, currentUser } from "@clerk/nextjs/server"
 
 async function userAuth() {
     const { userId } = await auth()
     return { userId }
 }
 
-export async function Fetch() {
-    const { userId } = await userAuth()
+export async function getOrCreateDbUser() {
+  const { userId } = await userAuth()
+  if (!userId) return null
 
-  if (!userId) {
+  let user = await prisma.user.findUnique({
+    where: { clerkId: userId },
+  })
+
+  if (!user) {
+    const clerkUser = await currentUser()
+    if (clerkUser) {
+      user = await prisma.user.create({
+        data: {
+          clerkId: clerkUser.id,
+          email: clerkUser.emailAddresses[0]?.emailAddress ?? "",
+          firstName: clerkUser.firstName,
+          lastName: clerkUser.lastName,
+          imageUrl: clerkUser.imageUrl,
+        },
+      })
+    }
+  }
+
+  return user
+}
+
+export async function Fetch() {
+  const user = await getOrCreateDbUser()
+  if (!user) {
     return []
   }
 
-  const user = await prisma.user.findUnique({
-    where: { clerkId: userId },
-    include: {
-      repos: true,
-    },
+  const repos = await prisma.repo.findMany({
+    where: { userId: user.id },
   })
 
-  return user?.repos ?? []
+  return repos
 }
 
-
 export async function FetchRepoContent(repoId: string) {
-    const { userId } = await userAuth()
-
-    if (!userId) return null
+    const user = await getOrCreateDbUser()
+    if (!user) return null
 
     const repo = await prisma.repo.findFirst({
         where: {
             id: repoId,
-            user: {
-                clerkId: userId,
-            },
+            userId: user.id,
         },
         include: {
             commits: {

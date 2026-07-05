@@ -1,11 +1,11 @@
 // Fetching Repo and Pushing to the Database
 
-
 import { auth } from "@clerk/nextjs/server"
 import { prisma } from "@/db/prisma"
 import { githubClient } from "@/lib/github-client"
 import { parseRepoUrl } from "@/lib/url-parser"
-import { syncRepoMemory } from "@/lib/repo-memory"
+import { syncRepository } from "@/lib/sync-repo"
+import { getOrCreateDbUser } from "@/lib/fetch-projects"
 import { NextResponse } from "next/server"
 
 export async function POST(req: Request) {
@@ -19,9 +19,7 @@ export async function POST(req: Request) {
       )
     }
 
-    const user = await prisma.user.findUnique({
-      where: { clerkId: userId },
-    })
+    const user = await getOrCreateDbUser()
 
     if (!user) {
       return NextResponse.json(
@@ -47,16 +45,6 @@ export async function POST(req: Request) {
       owner,
       repo,
     })
-    const commits = await github.rest.repos.listCommits({
-      owner,
-      repo,
-      per_page: 100,
-    })
-
-    const [totalFiles, totalCommits] = await Promise.all([
-      countFiles(github, owner, repo),
-      countCommits(github, owner, repo),
-    ])
 
     const existingRepository = await prisma.repo.findFirst({
       where: {
@@ -75,8 +63,6 @@ export async function POST(req: Request) {
             githubUrl: repositoryData.html_url,
             owner: repositoryData.owner.login,
             name: repositoryData.name,
-            totalFiles,
-            totalCommits,
           },
         })
       : await prisma.repo.create({
@@ -86,114 +72,17 @@ export async function POST(req: Request) {
             githubUrl: repositoryData.html_url,
             owner: repositoryData.owner.login,
             name: repositoryData.name,
-            totalFiles,
-            totalCommits,
           },
         })
 
-    if (existingRepository) {
-      const existingCommitIds = await prisma.commit.findMany({
-        where: {
-          repoId: repository.id,
-        },
-        select: {
-          id: true,
-        },
-      })
-
-      await prisma.commitFile.deleteMany({
-        where: {
-          commitId: {
-            in: existingCommitIds.map((commit) => commit.id),
-          },
-        },
-      })
-
-      await prisma.commit.deleteMany({
-        where: {
-          repoId: repository.id,
-        },
-      })
-    }
-
-    await prisma.commit.createMany({
-      data: commits.data.map((commit) => ({
-        repoId: repository.id,
-        sha: commit.sha,
-        message: commit.commit.message,
-        authorName: commit.commit.author?.name ?? "Unknown",
-        committedAt: new Date(
-          commit.commit.author?.date ?? Date.now()
-        ),
-        summary: null,
-      })),
-    })
-
-    const storedCommits = await prisma.commit.findMany({
-      where: {
-        repoId: repository.id,
-        sha: {
-          in: commits.data.map((commit) => commit.sha),
-        },
-      },
-      select: {
-        id: true,
-        sha: true,
-      },
-    })
-
-    const commitIdBySha = new Map(
-      storedCommits.map((commit) => [commit.sha, commit.id])
-    )
-
-    const commitFilesData = await Promise.all(
-      commits.data.map(async (commit) => {
-        const commitId = commitIdBySha.get(commit.sha)
-        if (!commitId) {
-          return []
-        }
-
-        const { data: commitDetails } = await github.rest.repos.getCommit({
-          owner,
-          repo,
-          ref: commit.sha,
-        })
-
-        return (
-          commitDetails.files?.map((file) => ({
-            commitId,
-            filePath: file.filename,
-            status: file.status,
-            additions: file.additions,
-            deletions: file.deletions,
-            changes: file.changes,
-            patch: file.patch ?? null,
-          })) ?? []
-        )
-      })
-    )
-
-    await prisma.commitFile.createMany({
-      data: commitFilesData.flat(),
-    })
-
-    let memorySyncError: string | null = null
-
-    try {
-      await syncRepoMemory(repository.id)
-    } catch (error) {
-      memorySyncError =
-        error instanceof Error ? error.message : "Failed to sync repo memory"
-      console.warn("[fetching-repo] memory sync failed:", memorySyncError)
-    }
+    // Call modular sync repository helper!
+    await syncRepository(repository.id)
 
     return NextResponse.json(
       {
         success: true,
         message: "Repo correctly fetched",
         repository,
-        memorySynced: memorySyncError === null,
-        memorySyncError,
       },
       { status: 201 }
     )
@@ -206,60 +95,4 @@ export async function POST(req: Request) {
       { status: 500 }
     )
   }
-}
-
-async function countFiles(
-  github: ReturnType<typeof githubClient>,
-  owner: string,
-  repo: string
-) {
-  const { data: repoDetails } = await github.rest.repos.get({
-    owner,
-    repo,
-  })
-
-  const { data: branch } = await github.rest.repos.getBranch({
-    owner,
-    repo,
-    branch: repoDetails.default_branch,
-  })
-
-  const { data: commit } = await github.rest.git.getCommit({
-    owner,
-    repo,
-    commit_sha: branch.commit.sha,
-  })
-
-  const { data: tree } = await github.rest.git.getTree({
-    owner,
-    repo,
-    tree_sha: commit.tree.sha,
-    recursive: "true",
-  })
-
-  return tree.tree.filter((entry) => entry.type === "blob").length
-}
-
-async function countCommits(
-  github: ReturnType<typeof githubClient>,
-  owner: string,
-  repo: string
-) {
-  const response = await github.rest.repos.listCommits({
-    owner,
-    repo,
-    per_page: 1,
-  })
-
-  const linkHeader = response.headers.link
-  if (!linkHeader) {
-    return response.data.length
-  }
-
-  const lastPageMatch = linkHeader.match(/&page=(\d+)>; rel="last"/)
-  if (!lastPageMatch) {
-    return response.data.length
-  }
-
-  return Number(lastPageMatch[1])
 }

@@ -1,3 +1,4 @@
+import { auth } from "@clerk/nextjs/server"
 import { NextResponse } from "next/server"
 
 import { DEFAULT_SYSTEM_MESSAGE, generateGeminiReply } from "@/lib/gemini"
@@ -9,6 +10,15 @@ type SummaryRequestBody = {
 
 export async function POST(req: Request) {
   try {
+    const { userId } = await auth()
+
+    if (!userId) {
+      return NextResponse.json(
+        { success: false, message: "User isn't authenticated" },
+        { status: 401 }
+      )
+    }
+
     const body = (await req.json()) as SummaryRequestBody
     const info = body.info?.trim()
     const systemMessage =

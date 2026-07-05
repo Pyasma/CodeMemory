@@ -577,10 +577,6 @@ export type RepoUncheckedUpdateManyWithoutUserNestedInput = {
   deleteMany?: Prisma.RepoScalarWhereInput | Prisma.RepoScalarWhereInput[]
 }
 
-export type NullableDateTimeFieldUpdateOperationsInput = {
-  set?: Date | string | null
-}
-
 export type RepoCreateNestedOneWithoutCommitsInput = {
   create?: Prisma.XOR<Prisma.RepoCreateWithoutCommitsInput, Prisma.RepoUncheckedCreateWithoutCommitsInput>
   connectOrCreate?: Prisma.RepoCreateOrConnectWithoutCommitsInput

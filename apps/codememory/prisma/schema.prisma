@@ -30,6 +30,11 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  stripeCustomerId       String?   @unique
+  stripeSubscriptionId   String?   @unique
+  stripePriceId          String?
+  stripeCurrentPeriodEnd DateTime?
+
   @@index([clerkId])  // Critical for webhook lookups
   @@index([email])
 
@@ -67,7 +72,7 @@ model Commit {
 
   repoId        String
 
-  sha           String   @unique
+  sha           String
   message       String
 
   authorName    String?
@@ -81,6 +86,7 @@ model Commit {
   repo          Repo @relation(fields: [repoId], references: [id])
   files         CommitFile[]
 
+  @@unique([repoId, sha])
   @@index([repoId])
   @@index([sha])
 

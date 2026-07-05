@@ -1,5 +1,9 @@
 import { SignUp } from '@clerk/nextjs'
 
-export default function SignInPage() {
-  return <SignUp />
+export default function SignUpPage() {
+  return (
+    <div className="flex min-h-screen w-full items-center justify-center bg-zinc-950 p-4">
+      <SignUp />
+    </div>
+  )
 }

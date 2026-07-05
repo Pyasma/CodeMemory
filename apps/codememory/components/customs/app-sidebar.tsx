@@ -19,11 +19,10 @@ import {
   SidebarTrigger
 } from "@/components/ui/sidebar"
 import { UserProfile } from "./user-profile"
-import { CreditCard } from "lucide-react"
+import { CreditCard, Disc } from "lucide-react"
 import { AddRepoDialog } from "./CreateRepoDialog"
 
-
-type  Project = {
+type Project = {
   id: string
   name: string
   githubUrl: string
@@ -34,37 +33,35 @@ interface AppSidebarProps {
 }
 
 export function AppSidebar({ projects = [] }: AppSidebarProps) {
-
   const { state } = useSidebar()
   const collapsed = state === "collapsed"
 
   return (
-    <Sidebar collapsible="icon">
-      <SidebarHeader className="border-b border-sidebar-border px-4 py-4 group-data-[collapsible=icon]:px-2">
+    <Sidebar collapsible="icon" className="border-r border-zinc-855 bg-zinc-950 text-white">
+      <SidebarHeader className="border-b border-zinc-900 px-4 py-4 group-data-[collapsible=icon]:px-2">
         <div className="flex items-center justify-between gap-3">
-          <div
-            className={
-              collapsed
-                ? "relative h-9 w-9 shrink-0"
-                : "relative h-15 w-[230px] shrink-0"
-            }
-          >
+          <Link href="/welcome" className="flex items-center gap-2">
             <Image
               src="/logo.svg"
               alt="CodeMemory Logo"
-              fill
+              width={collapsed ? 24 : 100}
+              height={collapsed ? 24 : 32}
+              className="h-6 w-auto object-contain invert"
               priority
-              sizes={collapsed ? "36px" : "230px"}
-              className="object-contain"
             />
-          </div>
-
+            {!collapsed && (
+              <span className="text-sm font-semibold tracking-tight text-white">
+                CodeMemory
+              </span>
+            )}
+          </Link>
           <SidebarTrigger />
         </div>
       </SidebarHeader>
-      <SidebarContent className="gap-4 p-3 group-data-[collapsible=icon]:p-2">
+
+      <SidebarContent className="gap-4 p-3 group-data-[collapsible=icon]:p-2 bg-zinc-950">
         <SidebarGroup className="p-1 group-data-[collapsible=icon]:p-0">
-          <SidebarGroupLabel>Projects</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-zinc-500 font-mono text-[10px] uppercase tracking-wider">Projects</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
@@ -73,7 +70,10 @@ export function AppSidebar({ projects = [] }: AppSidebarProps) {
 
               {projects.map((project) => (
                 <SidebarMenuItem key={project.id}>
-                  <SidebarMenuButton render={<Link href={`/repo/${project.id}`} />}>
+                  <SidebarMenuButton
+                    render={<Link href={`/repo/${project.id}`} />}
+                    className="rounded-xl transition-colors hover:bg-zinc-900 hover:text-white"
+                  >
                     <span>{project.name}</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -81,18 +81,28 @@ export function AppSidebar({ projects = [] }: AppSidebarProps) {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
         <SidebarGroup className="p-1 group-data-[collapsible=icon]:p-0">
-          <SidebarGroupLabel>Account</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-zinc-500 font-mono text-[10px] uppercase tracking-wider">Account</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
                 <SidebarMenuButton
-                  type="button"
-                  className="w-full justify-start rounded-xl"
+                  render={<Link href="/welcome/billing" />}
+                  className="w-full justify-start rounded-xl transition-colors hover:bg-zinc-900 hover:text-white"
                 >
-                  <CreditCard/>
-
+                  <CreditCard className="h-4 w-4" />
                   {!collapsed && <span>Billing</span>}
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  render={<Link href="/welcome/buy-cd" />}
+                  className="w-full justify-start rounded-xl transition-colors hover:bg-zinc-900 hover:text-white"
+                >
+                  <Disc className="h-4 w-4" style={{ animation: "spin 6s linear infinite" }} />
+                  {!collapsed && <span>Buy your CD</span>}
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
@@ -100,7 +110,7 @@ export function AppSidebar({ projects = [] }: AppSidebarProps) {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="border-t border-sidebar-border px-4 py-4 group-data-[collapsible=icon]:px-2">
+      <SidebarFooter className="border-t border-zinc-900 px-4 py-4 group-data-[collapsible=icon]:px-2 bg-zinc-950">
         <SidebarMenu>
           <Show when="signed-in">
             <SidebarMenuItem>

@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { ArrowUpRight, Bot, Sparkles, User, Plus, Smile, SendHorizontal } from "lucide-react"
+import { ArrowUpRight, Bot, Sparkles, User, SendHorizontal } from "lucide-react"
 import ReactMarkdown from "react-markdown"
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -132,17 +132,11 @@ export function ChatPageView({
   onMessagesPersisted,
 }: ChatPageProps) {
   const [messages, setMessages] = React.useState(chat.messages)
-  const [draft, setDraft] = React.useState("")
+  const [draft, setDraft] = React.useState(() => initialQuery ?? "")
   const [isSending, setIsSending] = React.useState(false)
   const [memoryHits, setMemoryHits] = React.useState<MemoryHit[]>([])
   const bottomRef = React.useRef<HTMLDivElement | null>(null)
   const hasMountedRef = React.useRef(false)
-
-  React.useEffect(() => {
-    if (initialQuery) {
-      setDraft(initialQuery)
-    }
-  }, [initialQuery])
 
   const onMessagesPersistedRef = React.useRef(onMessagesPersisted)
   React.useEffect(() => {

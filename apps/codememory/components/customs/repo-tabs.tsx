@@ -97,7 +97,7 @@ export function RepoTabs({ repo }: RepoTabsProps) {
     setActiveTab("chat")
   }
 
-  async function handleCreateChat() {
+  async function handleCreateChat(initialQuery = "") {
     if (isCreatingChat) {
       return
     }
@@ -123,6 +123,7 @@ export function RepoTabs({ repo }: RepoTabsProps) {
 
       setChats((prev) => [nextChat, ...prev])
       setActiveChatId(nextChat.id)
+      setInitialQuery(initialQuery)
       setActiveTab("chat")
       toast.success("New chat session created!")
     } catch (e) {
@@ -188,8 +189,7 @@ export function RepoTabs({ repo }: RepoTabsProps) {
   function handleQueryCommit(sha: string) {
     const commit = repo.commits.find((c) => c.sha === sha)
     const text = `Explain the changes in commit ${sha.slice(0, 7)}: "${commit?.message ?? ""}"`
-    setInitialQuery(text)
-    openChatTab()
+    void handleCreateChat(text)
   }
 
   const selectedChat = activeChat ? toChatView(activeChat, repo) : null

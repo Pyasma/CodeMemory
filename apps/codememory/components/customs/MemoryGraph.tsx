@@ -1,10 +1,21 @@
 "use client"
 
 import * as React from "react"
-import { BrainCircuit, GitCommit, FileCode, Plus, Minus, X } from "lucide-react"
+import {
+  BrainCircuit,
+  FileCode,
+  GitBranch,
+  GitCommit,
+  Layers3,
+  Minus,
+  MousePointer2,
+  Move3D,
+  Plus,
+  Search,
+  Sparkles,
+  X,
+} from "lucide-react"
 import { Button } from "@/components/ui/button"
-
-// ─── Types ──────────────────────────────────────────────────────────────────────
 
 type CommitFile = {
   id: string
@@ -31,8 +42,6 @@ interface MemoryGraphProps {
   onQueryCommit?: (sha: string) => void
 }
 
-// ─── Node / Edge Structures ─────────────────────────────────────────────────────
-
 type NodeType = "repo" | "commit" | "file"
 
 interface Node {
@@ -44,148 +53,227 @@ interface Node {
   vx: number
   vy: number
   radius: number
-  // Base HSL values for flexible rendering
-  hue: number
-  saturation: number
-  lightness: number
+  color: string
+  borderColor: string
   data?: Commit | CommitFile | null
   commitId?: string
   fileStatus?: string
   pinned?: boolean
+  hue: number
 }
 
 interface Edge {
   source: string
   target: string
-  hue: number
+  color: string
 }
 
-// ─── Color Palette — vivid commit hues ─────────────────────────────────────────
+const THEME = {
+  bg: "#08080c",
+  bgSoft: "#101017",
+  panel: "#13131a",
+  panel2: "#181821",
+  panel3: "#1f1f29",
+  border: "rgba(255,255,255,0.08)",
+  borderStrong: "rgba(255,255,255,0.12)",
+  text: "#f5f3ef",
+  muted: "#b3b0bb",
+  subtle: "#73707d",
+  accent: "#a78bfa",
+  accent2: "#60a5fa",
+  success: "#4ade80",
+  warning: "#fbbf24",
+  danger: "#fb7185",
+  info: "#38bdf8",
+  repo: "#f3cf8b",
+}
 
-const COMMIT_HUES = [
-  260, // violet
-  195, // cyan
-  340, // pink
-  160, // emerald
-  30,  // amber
-  210, // sky
-  290, // fuchsia
-  80,  // lime
-  15,  // orange
-  230, // indigo
-  130, // green
-  320, // rose
-  45,  // yellow
-  270, // purple
-  185, // teal
-  350, // red
-  55,  // gold
-  250, // blue-violet
-  100, // yellow-green
-  305, // magenta
+const COMMIT_COLORS = [
+  "#a78bfa",
+  "#60a5fa",
+  "#38bdf8",
+  "#4ade80",
+  "#fbbf24",
+  "#f97316",
+  "#f472b6",
+  "#c084fc",
+  "#22c55e",
+  "#fb7185",
 ]
 
-const FILE_STATUS_HSL: Record<string, [number, number, number]> = {
-  added: [152, 72, 52],  // emerald
-  removed: [4, 74, 62],  // rose-red
-  deleted: [4, 74, 62],
-  modified: [42, 92, 58],  // amber
-  renamed: [262, 80, 68],  // violet
-  copied: [199, 80, 62],  // cyan
+const FILE_STATUS: Record<string, { fill: string; border: string; glow: string }> = {
+  added: { fill: "#4ade80", border: "#4ade8050", glow: "#4ade8022" },
+  removed: { fill: "#fb7185", border: "#fb718550", glow: "#fb718522" },
+  deleted: { fill: "#fb7185", border: "#fb718550", glow: "#fb718522" },
+  modified: { fill: "#fbbf24", border: "#fbbf2450", glow: "#fbbf2422" },
+  renamed: { fill: "#a78bfa", border: "#a78bfa50", glow: "#a78bfa22" },
+  copied: { fill: "#38bdf8", border: "#38bdf850", glow: "#38bdf822" },
 }
 
-function fileStatusHSL(status?: string): [number, number, number] {
-  if (!status) return FILE_STATUS_HSL.modified
-  return FILE_STATUS_HSL[status.toLowerCase()] ?? FILE_STATUS_HSL.modified
-}
-
-function hslStr(h: number, s: number, l: number, a = 1) {
-  return `hsla(${h},${s}%,${l}%,${a})`
+function getFileStatus(status?: string) {
+  if (!status) return FILE_STATUS.modified
+  return FILE_STATUS[status.toLowerCase()] ?? FILE_STATUS.modified
 }
 
 function truncateLabel(str: string, maxLen: number) {
-  return str.length <= maxLen ? str : str.slice(0, maxLen - 1) + "…"
+  return str.length <= maxLen ? str : `${str.slice(0, maxLen - 1)}…`
 }
 
-// ─── Canvas Drawing Helpers ─────────────────────────────────────────────────────
-
-function drawGlossyNode(
+function roundRectPath(
   ctx: CanvasRenderingContext2D,
   x: number,
   y: number,
-  r: number,
-  h: number,
-  s: number,
-  l: number,
-  selected: boolean,
-  highlighted: boolean,
-  alpha = 1.0,
+  width: number,
+  height: number,
+  radius: number,
 ) {
-  const boost = selected ? 1.25 : highlighted ? 1.1 : 1.0
-
-  // ── Outer glow ──────────────────────────────────────────────────────────────
-  const glowR = r * (selected ? 3.2 : highlighted ? 2.6 : 2.0)
-  const glow = ctx.createRadialGradient(x, y, r * 0.4, x, y, glowR)
-  glow.addColorStop(0, hslStr(h, s, l + 10, selected ? 0.55 : 0.3))
-  glow.addColorStop(1, hslStr(h, s, l, 0))
+  const r = Math.min(radius, width / 2, height / 2)
   ctx.beginPath()
-  ctx.arc(x, y, glowR, 0, Math.PI * 2)
-  ctx.fillStyle = glow
-  ctx.fill()
-
-  // ── Base sphere gradient ─────────────────────────────────────────────────────
-  const baseGrd = ctx.createRadialGradient(x - r * 0.28, y - r * 0.32, r * 0.02, x + r * 0.1, y + r * 0.15, r * 1.1)
-  baseGrd.addColorStop(0, hslStr(h, Math.min(s + 10, 100), Math.min(l * boost + 22, 90), alpha))
-  baseGrd.addColorStop(0.55, hslStr(h, s, l * boost, alpha))
-  baseGrd.addColorStop(1, hslStr(h, Math.min(s + 5, 100), Math.max(l * boost - 22, 8), alpha))
-  ctx.beginPath()
-  ctx.arc(x, y, r, 0, Math.PI * 2)
-  ctx.fillStyle = baseGrd
-  ctx.fill()
-
-  // ── Inner rim shadow (gives depth) ──────────────────────────────────────────
-  const rimGrd = ctx.createRadialGradient(x, y, r * 0.7, x, y, r)
-  rimGrd.addColorStop(0, "rgba(0,0,0,0)")
-  rimGrd.addColorStop(1, "rgba(0,0,0,0.35)")
-  ctx.beginPath()
-  ctx.arc(x, y, r, 0, Math.PI * 2)
-  ctx.fillStyle = rimGrd
-  ctx.fill()
-
-  // ── Specular highlight (glossy top-left spot) ────────────────────────────────
-  const hx = x - r * 0.3
-  const hy = y - r * 0.32
-  const specR = r * 0.55
-  const spec = ctx.createRadialGradient(hx, hy, 0, hx, hy, specR)
-  spec.addColorStop(0, `rgba(255,255,255,${selected ? 0.7 : 0.42})`)
-  spec.addColorStop(0.45, `rgba(255,255,255,${selected ? 0.18 : 0.1})`)
-  spec.addColorStop(1, "rgba(255,255,255,0)")
-  ctx.beginPath()
-  ctx.arc(x, y, r, 0, Math.PI * 2)
-  ctx.fillStyle = spec
-  ctx.fill()
-
-  // ── Border ring ─────────────────────────────────────────────────────────────
-  ctx.beginPath()
-  ctx.arc(x, y, r, 0, Math.PI * 2)
-  ctx.strokeStyle = hslStr(h, Math.min(s + 20, 100), selected ? 88 : highlighted ? 78 : 68, selected ? 0.9 : 0.55)
-  ctx.lineWidth = selected ? 2 : 1.2
-  ctx.stroke()
-
-  // ── Selection pulse ring ─────────────────────────────────────────────────────
-  if (selected) {
-    const t = (Date.now() % 1400) / 1400
-    const pulseR = r + 9 + t * 13
-    const pulseA = (1 - t) * 0.7
-    ctx.beginPath()
-    ctx.arc(x, y, pulseR, 0, Math.PI * 2)
-    ctx.strokeStyle = hslStr(h, s, l + 20, pulseA)
-    ctx.lineWidth = 1.5
-    ctx.stroke()
-  }
+  ctx.moveTo(x + r, y)
+  ctx.lineTo(x + width - r, y)
+  ctx.quadraticCurveTo(x + width, y, x + width, y + r)
+  ctx.lineTo(x + width, y + height - r)
+  ctx.quadraticCurveTo(x + width, y + height, x + width - r, y + height)
+  ctx.lineTo(x + r, y + height)
+  ctx.quadraticCurveTo(x, y + height, x, y + height - r)
+  ctx.lineTo(x, y + r)
+  ctx.quadraticCurveTo(x, y, x + r, y)
+  ctx.closePath()
 }
 
-// ─── Main Component ─────────────────────────────────────────────────────────────
+function drawNode(
+  ctx: CanvasRenderingContext2D,
+  node: Node,
+  selected: boolean,
+  highlighted: boolean,
+  alpha = 1,
+) {
+  const { x, y, radius, borderColor, color, type, label } = node
+
+  ctx.save()
+  ctx.globalAlpha = alpha
+
+  const glowColor = selected
+    ? `${borderColor}66`
+    : highlighted
+      ? `${borderColor}3a`
+      : `${borderColor}18`
+
+  if (selected || highlighted) {
+    const glow = ctx.createRadialGradient(x, y, radius * 0.4, x, y, radius * 2.6)
+    glow.addColorStop(0, glowColor)
+    glow.addColorStop(1, `${borderColor}00`)
+    ctx.fillStyle = glow
+    ctx.beginPath()
+    ctx.arc(x, y, radius * 2.6, 0, Math.PI * 2)
+    ctx.fill()
+  }
+
+  if (type === "repo") {
+    const halo = ctx.createRadialGradient(x, y, radius * 0.2, x, y, radius * 1.55)
+    halo.addColorStop(0, `${THEME.repo}18`)
+    halo.addColorStop(0.55, `${borderColor}28`)
+    halo.addColorStop(1, `${borderColor}00`)
+    ctx.fillStyle = halo
+    ctx.beginPath()
+    ctx.arc(x, y, radius * 1.55, 0, Math.PI * 2)
+    ctx.fill()
+
+    const fill = ctx.createRadialGradient(x - radius * 0.15, y - radius * 0.18, radius * 0.2, x, y, radius)
+    fill.addColorStop(0, "#20202a")
+    fill.addColorStop(1, color)
+    ctx.fillStyle = fill
+    ctx.beginPath()
+    ctx.arc(x, y, radius, 0, Math.PI * 2)
+    ctx.fill()
+
+    ctx.beginPath()
+    ctx.arc(x, y, radius, 0, Math.PI * 2)
+    ctx.lineWidth = selected ? 2.25 : highlighted ? 1.6 : 1.15
+    ctx.strokeStyle = selected ? borderColor : `${borderColor}aa`
+    ctx.stroke()
+
+    ctx.beginPath()
+    ctx.arc(x, y, radius * 0.64, 0, Math.PI * 2)
+    ctx.strokeStyle = `${THEME.repo}${selected ? "66" : "3a"}`
+    ctx.lineWidth = 1
+    ctx.stroke()
+
+    const ringDots = 5
+    for (let i = 0; i < ringDots; i++) {
+      const angle = -Math.PI / 2 + (i / ringDots) * Math.PI * 2
+      const dotX = x + Math.cos(angle) * (radius * 1.1)
+      const dotY = y + Math.sin(angle) * (radius * 1.1)
+      ctx.beginPath()
+      ctx.arc(dotX, dotY, 1.35, 0, Math.PI * 2)
+      ctx.fillStyle = `${THEME.repo}${selected ? "99" : "55"}`
+      ctx.fill()
+    }
+
+    ctx.fillStyle = THEME.text
+    ctx.font = `${selected ? "700 " : "600 "}10px ui-monospace, SFMono-Regular, Menlo, monospace`
+    ctx.textAlign = "center"
+    ctx.textBaseline = "middle"
+    ctx.fillText(truncateLabel(label, 10), x, y - 1)
+    ctx.fillStyle = THEME.repo
+    ctx.font = "600 8px ui-monospace, SFMono-Regular, Menlo, monospace"
+    ctx.fillText("repo", x, y + 10)
+  } else if (type === "commit") {
+    const fill = ctx.createRadialGradient(x - radius * 0.18, y - radius * 0.18, radius * 0.2, x, y, radius * 1.2)
+    fill.addColorStop(0, "#262631")
+    fill.addColorStop(1, color)
+    ctx.fillStyle = fill
+    ctx.beginPath()
+    ctx.arc(x, y, radius, 0, Math.PI * 2)
+    ctx.fill()
+
+    ctx.beginPath()
+    ctx.arc(x, y, radius, 0, Math.PI * 2)
+    ctx.lineWidth = selected ? 2.15 : highlighted ? 1.55 : 1
+    ctx.strokeStyle = selected ? borderColor : `${borderColor}c0`
+    ctx.stroke()
+
+    ctx.beginPath()
+    ctx.arc(x, y, radius * 0.36, 0, Math.PI * 2)
+    ctx.fillStyle = selected ? THEME.text : `${THEME.text}cc`
+    ctx.fill()
+
+    ctx.fillStyle = selected ? THEME.text : highlighted ? THEME.muted : THEME.subtle
+    ctx.font = `${selected ? "700 " : "600 "}8.5px ui-monospace, SFMono-Regular, Menlo, monospace`
+    ctx.textAlign = "center"
+    ctx.textBaseline = "middle"
+    ctx.fillText(label, x, y + radius + 11)
+  } else {
+    const w = Math.max(62, Math.min(130, label.length * 6.3 + 24))
+    const h = 22
+    const left = x - w / 2
+    const top = y - h / 2
+
+    const fill = ctx.createLinearGradient(left, top, left + w, top + h)
+    fill.addColorStop(0, `${node.borderColor}24`)
+    fill.addColorStop(1, `${color}`)
+    ctx.fillStyle = fill
+    roundRectPath(ctx, left, top, w, h, 10)
+    ctx.fill()
+
+    ctx.strokeStyle = selected ? borderColor : highlighted ? `${borderColor}b0` : `${borderColor}88`
+    ctx.lineWidth = selected ? 1.7 : 1
+    ctx.stroke()
+
+    ctx.beginPath()
+    ctx.arc(left + 11, y, 2.2, 0, Math.PI * 2)
+    ctx.fillStyle = borderColor
+    ctx.fill()
+
+    ctx.fillStyle = selected ? THEME.text : highlighted ? THEME.muted : "#d7d4de"
+    ctx.font = `${selected ? "700 " : "600 "}8.5px ui-monospace, SFMono-Regular, Menlo, monospace`
+    ctx.textAlign = "left"
+    ctx.textBaseline = "middle"
+    ctx.fillText(truncateLabel(label, 18), left + 18, y + 0.5)
+  }
+
+  ctx.restore()
+}
 
 export function MemoryGraph({ commits = [], repoName = "Repository", onQueryCommit }: MemoryGraphProps) {
   const canvasRef = React.useRef<HTMLCanvasElement>(null)
@@ -197,73 +285,72 @@ export function MemoryGraph({ commits = [], repoName = "Repository", onQueryComm
   const tickCountRef = React.useRef(0)
   const stabilizedRef = React.useRef(false)
 
-  // Camera
   const offsetRef = React.useRef({ x: 0, y: 0 })
   const scaleRef = React.useRef(1)
 
-  // Drag / pan
   const draggingNodeRef = React.useRef<Node | null>(null)
   const isPanningRef = React.useRef(false)
-  const pointerDownPosRef = React.useRef({ x: 0, y: 0 })   // for click detection
-  const lastPointerRef = React.useRef({ x: 0, y: 0 })       // for delta movement
+  const pointerDownPosRef = React.useRef({ x: 0, y: 0 })
+  const lastPointerRef = React.useRef({ x: 0, y: 0 })
 
-  // Selection (dual: ref for canvas loop, state for React re-render)
-  const [selectedNode, setSelectedNode] = React.useState<Node | null>(null)
-  const selectedNodeRef = React.useRef<Node | null>(null)
-
+  const [selectedSelection, setSelectedSelection] = React.useState<{ id: string; type: NodeType } | null>(null)
+  const selectedNodeRef = React.useRef<string | null>(null)
   const [size, setSize] = React.useState({ w: 800, h: 500 })
-
-  // ── Build graph nodes & edges ───────────────────────────────────────────────
 
   React.useEffect(() => {
     const w = size.w
     const h = size.h
     const cx = w / 2
     const cy = h / 2
-
     const nodes: Node[] = []
     const edges: Edge[] = []
 
-    // Center repo node
     nodes.push({
       id: "repo",
       type: "repo",
       label: repoName,
-      x: cx, y: cy, vx: 0, vy: 0,
+      x: cx,
+      y: cy,
+      vx: 0,
+      vy: 0,
       radius: 38,
-      hue: 265, saturation: 70, lightness: 38,
+      color: THEME.panel3,
+      borderColor: THEME.repo,
+      hue: 45,
       pinned: true,
     })
 
-    // Cap for performance — 30 commits, 7 files each = 240 nodes max
     const visibleCommits = commits.slice(0, 30)
 
     visibleCommits.forEach((commit, ci) => {
-      const angle = (ci / visibleCommits.length) * 2 * Math.PI - Math.PI / 2
-      const dist = Math.min(w, h) * 0.26
-      const commitHue = COMMIT_HUES[ci % COMMIT_HUES.length]
+      const angle = visibleCommits.length ? (ci / visibleCommits.length) * Math.PI * 2 - Math.PI / 2 : 0
+      const dist = Math.min(w, h) * 0.25
+      const commitColor = COMMIT_COLORS[ci % COMMIT_COLORS.length]
 
       const cNode: Node = {
         id: commit.id,
         type: "commit",
         label: commit.sha.slice(0, 7),
-        x: cx + Math.cos(angle) * dist + (Math.random() - 0.5) * 24,
-        y: cy + Math.sin(angle) * dist + (Math.random() - 0.5) * 24,
-        vx: 0, vy: 0,
-        radius: 19,
-        hue: commitHue, saturation: 80, lightness: 45,
+        x: cx + Math.cos(angle) * dist + (Math.random() - 0.5) * 18,
+        y: cy + Math.sin(angle) * dist + (Math.random() - 0.5) * 18,
+        vx: 0,
+        vy: 0,
+        radius: 18,
+        color: THEME.panel2,
+        borderColor: commitColor,
+        hue: ci * 24,
         data: commit,
       }
       nodes.push(cNode)
-      edges.push({ source: "repo", target: commit.id, hue: commitHue })
+      edges.push({ source: "repo", target: commit.id, color: `${commitColor}55` })
 
       const visFiles = commit.files.slice(0, 7)
       visFiles.forEach((file, fi) => {
-        const spread = Math.min(1.5, (1.2 * (visFiles.length)) / 8)
+        const spread = Math.min(1.4, (1.1 * visFiles.length) / 8)
         const fAngle = angle + ((fi - (visFiles.length - 1) / 2) / visFiles.length) * spread
-        const fDist = dist + 88 + Math.random() * 18
+        const fDist = dist + 86 + Math.random() * 16
         const fId = `file-${file.id}`
-        const [fh, fs, fl] = fileStatusHSL(file.status)
+        const fs = getFileStatus(file.status)
 
         nodes.push({
           id: fId,
@@ -271,14 +358,17 @@ export function MemoryGraph({ commits = [], repoName = "Repository", onQueryComm
           label: file.filePath.split("/").pop() ?? file.filePath,
           x: cx + Math.cos(fAngle) * fDist,
           y: cy + Math.sin(fAngle) * fDist,
-          vx: 0, vy: 0,
-          radius: 12,
-          hue: fh, saturation: fs, lightness: fl,
+          vx: 0,
+          vy: 0,
+          radius: 20,
+          color: `${fs.fill}18`,
+          borderColor: fs.fill,
+          hue: 0,
           data: file,
           commitId: commit.id,
           fileStatus: file.status,
         })
-        edges.push({ source: commit.id, target: fId, hue: fh })
+        edges.push({ source: commit.id, target: fId, color: fs.fill + "40" })
       })
     })
 
@@ -286,30 +376,23 @@ export function MemoryGraph({ commits = [], repoName = "Repository", onQueryComm
     edgesRef.current = edges
     tickCountRef.current = 0
     stabilizedRef.current = false
-
-    // Clear selection
     selectedNodeRef.current = null
-    setSelectedNode(null)
-
-    // Reset camera to center
     offsetRef.current = { x: 0, y: 0 }
     scaleRef.current = 1
   }, [commits, repoName, size.w, size.h])
 
-  // ── Resize observer ─────────────────────────────────────────────────────────
-
   React.useEffect(() => {
     const el = containerRef.current
     if (!el) return
+
     const ro = new ResizeObserver(() => {
       setSize({ w: el.clientWidth, h: el.clientHeight })
     })
+
     ro.observe(el)
     setSize({ w: el.clientWidth, h: el.clientHeight })
     return () => ro.disconnect()
   }, [])
-
-  // ── Render + physics loop ───────────────────────────────────────────────────
 
   React.useEffect(() => {
     const canvas = canvasRef.current
@@ -327,17 +410,14 @@ export function MemoryGraph({ commits = [], repoName = "Repository", onQueryComm
       const cx = W / 2
       const cy = H / 2
 
-      // ── Physics (only while not yet stabilized) ──────────────────────────────
       if (!stabilizedRef.current) {
         const t = tickCountRef.current++
-        // Cooling schedule: strong at start, fades to zero
         const alpha = Math.max(0, 0.45 * Math.exp(-t * 0.018))
 
         if (alpha < 0.001) {
           stabilizedRef.current = true
         } else {
-          // Repulsion — skip pairs that are already far apart (> 220px)
-          const MAX_REP_DIST = 220
+          const MAX_REP_DIST = 230
           for (let i = 0; i < nodes.length; i++) {
             for (let j = i + 1; j < nodes.length; j++) {
               const a = nodes[i]
@@ -346,91 +426,118 @@ export function MemoryGraph({ commits = [], repoName = "Repository", onQueryComm
               const dy = b.y - a.y
               if (Math.abs(dx) > MAX_REP_DIST || Math.abs(dy) > MAX_REP_DIST) continue
               const dist2 = dx * dx + dy * dy
-              const minDist = a.radius + b.radius + 55
+              const minDist = a.radius + b.radius + 42
               const dist = Math.sqrt(dist2) || 1
               if (dist < minDist) {
-                const force = ((minDist - dist) / dist) * 0.55 * alpha
+                const force = ((minDist - dist) / dist) * 0.5 * alpha
                 const fx = dx * force
                 const fy = dy * force
-                if (!a.pinned) { a.vx -= fx; a.vy -= fy }
-                if (!b.pinned) { b.vx += fx; b.vy += fy }
+                if (!a.pinned) {
+                  a.vx -= fx
+                  a.vy -= fy
+                }
+                if (!b.pinned) {
+                  b.vx += fx
+                  b.vy += fy
+                }
               }
             }
           }
 
-          // Spring attraction along edges
-          const idealLen: Record<string, number> = { "repo-commit": 175, "commit-file": 88 }
+          const idealLen: Record<string, number> = { "repo-commit": 172, "commit-file": 90 }
           for (const edge of edges) {
-            const a = nodes.find(n => n.id === edge.source)
-            const b = nodes.find(n => n.id === edge.target)
+            const a = nodes.find((n) => n.id === edge.source)
+            const b = nodes.find((n) => n.id === edge.target)
             if (!a || !b) continue
             const dx = b.x - a.x
             const dy = b.y - a.y
             const dist = Math.sqrt(dx * dx + dy * dy) || 1
             const key = a.type === "repo" ? "repo-commit" : "commit-file"
-            const ideal = idealLen[key] ?? 140
+            const ideal = idealLen[key] ?? 130
             const force = ((dist - ideal) / dist) * 0.14 * alpha
-            if (!a.pinned) { a.vx += dx * force; a.vy += dy * force }
-            if (!b.pinned) { b.vx -= dx * force; b.vy -= dy * force }
+            if (!a.pinned) {
+              a.vx += dx * force
+              a.vy += dy * force
+            }
+            if (!b.pinned) {
+              b.vx -= dx * force
+              b.vy -= dy * force
+            }
           }
 
-          // Gravity toward center
-          for (const n of nodes) {
-            if (n.pinned) continue
-            n.vx += (cx - n.x) * 0.003 * alpha
-            n.vy += (cy - n.y) * 0.003 * alpha
+          for (const node of nodes) {
+            if (node.pinned) continue
+            node.vx += (cx - node.x) * 0.0027 * alpha
+            node.vy += (cy - node.y) * 0.0027 * alpha
           }
 
-          // Integrate + damping
-          for (const n of nodes) {
-            if (n.pinned || n === draggingNodeRef.current) continue
-            n.vx *= 0.78
-            n.vy *= 0.78
-            n.x += n.vx
-            n.y += n.vy
+          for (const node of nodes) {
+            if (node.pinned || node === draggingNodeRef.current) continue
+            node.vx *= 0.8
+            node.vy *= 0.8
+            node.x += node.vx
+            node.y += node.vy
           }
         }
       }
 
-      // ── Render ───────────────────────────────────────────────────────────────
       const scale = scaleRef.current
       const ox = offsetRef.current.x
       const oy = offsetRef.current.y
 
       ctx.clearRect(0, 0, W, H)
 
-      // Background
-      const bgGrd = ctx.createRadialGradient(W / 2, H / 2, 0, W / 2, H / 2, Math.max(W, H) * 0.75)
-      bgGrd.addColorStop(0, "#111018")
-      bgGrd.addColorStop(1, "#08080d")
-      ctx.fillStyle = bgGrd
+      const base = ctx.createLinearGradient(0, 0, 0, H)
+      base.addColorStop(0, THEME.bgSoft)
+      base.addColorStop(1, THEME.bg)
+      ctx.fillStyle = base
+      ctx.fillRect(0, 0, W, H)
+
+      const orbA = ctx.createRadialGradient(W * 0.18, H * 0.18, 0, W * 0.18, H * 0.18, Math.max(W, H) * 0.55)
+      orbA.addColorStop(0, "rgba(167,139,250,0.18)")
+      orbA.addColorStop(0.45, "rgba(167,139,250,0.05)")
+      orbA.addColorStop(1, "rgba(167,139,250,0)")
+      ctx.fillStyle = orbA
+      ctx.fillRect(0, 0, W, H)
+
+      const orbB = ctx.createRadialGradient(W * 0.82, H * 0.28, 0, W * 0.82, H * 0.28, Math.max(W, H) * 0.45)
+      orbB.addColorStop(0, "rgba(56,189,248,0.12)")
+      orbB.addColorStop(0.5, "rgba(56,189,248,0.03)")
+      orbB.addColorStop(1, "rgba(56,189,248,0)")
+      ctx.fillStyle = orbB
       ctx.fillRect(0, 0, W, H)
 
       ctx.save()
       ctx.translate(ox, oy)
       ctx.scale(scale, scale)
 
-      // Dot grid
-      const gs = 44
-      const gx0 = Math.floor(-ox / scale / gs) * gs
-      const gy0 = Math.floor(-oy / scale / gs) * gs
-      const gx1 = gx0 + W / scale + gs * 2
-      const gy1 = gy0 + H / scale + gs * 2
-      ctx.fillStyle = "rgba(255,255,255,0.035)"
-      for (let gx = gx0; gx < gx1; gx += gs) {
-        for (let gy = gy0; gy < gy1; gy += gs) {
-          ctx.beginPath()
-          ctx.arc(gx, gy, 1, 0, Math.PI * 2)
-          ctx.fill()
-        }
+      const grid = 48
+      const gx0 = Math.floor((-ox / scale) / grid) * grid
+      const gy0 = Math.floor((-oy / scale) / grid) * grid
+      const gx1 = gx0 + W / scale + grid * 2
+      const gy1 = gy0 + H / scale + grid * 2
+
+      ctx.strokeStyle = "rgba(255,255,255,0.035)"
+      ctx.lineWidth = 1
+      for (let gx = gx0; gx < gx1; gx += grid) {
+        ctx.beginPath()
+        ctx.moveTo(gx, gy0)
+        ctx.lineTo(gx, gy1)
+        ctx.stroke()
+      }
+      for (let gy = gy0; gy < gy1; gy += grid) {
+        ctx.beginPath()
+        ctx.moveTo(gx0, gy)
+        ctx.lineTo(gx1, gy)
+        ctx.stroke()
       }
 
-      const sel = selectedNodeRef.current
+      const nodeById = new Map(nodes.map((node) => [node.id, node]))
+      const sel = selectedNodeRef.current ? nodeById.get(selectedNodeRef.current) ?? null : null
 
-      // ── Edges ─────────────────────────────────────────────────────────────────
       for (const edge of edges) {
-        const a = nodes.find(n => n.id === edge.source)
-        const b = nodes.find(n => n.id === edge.target)
+        const a = nodeById.get(edge.source)
+        const b = nodeById.get(edge.target)
         if (!a || !b) continue
 
         const isLit = sel && (sel.id === a.id || sel.id === b.id || sel.commitId === a.id)
@@ -443,69 +550,36 @@ export function MemoryGraph({ commits = [], repoName = "Repository", onQueryComm
         ctx.quadraticCurveTo(mx, my, b.x, b.y)
 
         if (isLit) {
-          // Glowing animated edge
-          const edgeGrd = ctx.createLinearGradient(a.x, a.y, b.x, b.y)
-          edgeGrd.addColorStop(0, hslStr(edge.hue, 80, 65, 0.85))
-          edgeGrd.addColorStop(1, hslStr(edge.hue, 70, 58, 0.4))
-          ctx.strokeStyle = edgeGrd
-          ctx.lineWidth = 1.8
-          ctx.shadowColor = hslStr(edge.hue, 80, 65, 0.5)
-          ctx.shadowBlur = 6
+          const grad = ctx.createLinearGradient(a.x, a.y, b.x, b.y)
+          grad.addColorStop(0, `${a.borderColor}e6`)
+          grad.addColorStop(1, `${b.borderColor}cc`)
+          ctx.strokeStyle = grad
+          ctx.lineWidth = 1.55
         } else {
-          ctx.strokeStyle = hslStr(edge.hue, 40, 35, sel ? 0.12 : 0.3)
-          ctx.lineWidth = 0.8
+          ctx.strokeStyle = sel ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.04)"
+          ctx.lineWidth = 0.9
         }
+
         ctx.stroke()
         ctx.restore()
       }
 
-      // ── Nodes ─────────────────────────────────────────────────────────────────
       for (const node of nodes) {
         const isSelected = sel?.id === node.id
         const isHighlighted =
-          sel &&
+          !!sel &&
           !isSelected &&
           (node.commitId === sel.id ||
             sel.commitId === node.id ||
-            (sel.type === "repo") ||
-            edges.some(e =>
-              (e.source === sel.id && e.target === node.id) ||
-              (e.target === sel.id && e.source === node.id)
+            sel.type === "repo" ||
+            edges.some(
+              (edge) =>
+                (edge.source === sel.id && edge.target === node.id) ||
+                (edge.target === sel.id && edge.source === node.id),
             ))
 
-        const alpha = sel && !isSelected && !isHighlighted ? 0.35 : 1.0
-
-        drawGlossyNode(
-          ctx,
-          node.x, node.y, node.radius,
-          node.hue, node.saturation, node.lightness,
-          isSelected, !!isHighlighted, alpha,
-        )
-
-        // Labels
-        ctx.save()
-        ctx.globalAlpha = alpha
-        if (node.type === "repo") {
-          ctx.fillStyle = "#f4f4f5"
-          ctx.font = "bold 9.5px 'SF Mono', monospace"
-          ctx.textAlign = "center"
-          ctx.textBaseline = "middle"
-          const parts = node.label.split("/")
-          ctx.fillText(truncateLabel(parts[parts.length - 1], 9), node.x, node.y)
-        } else if (node.type === "commit") {
-          ctx.fillStyle = isSelected ? "#fff" : isHighlighted ? "#f4f4f5" : "#d4d4d8"
-          ctx.font = `${isSelected ? "bold " : ""}8px 'SF Mono', monospace`
-          ctx.textAlign = "center"
-          ctx.textBaseline = "middle"
-          ctx.fillText(node.label, node.x, node.y)
-        } else if (isSelected || isHighlighted) {
-          ctx.fillStyle = isSelected ? "#fff" : "#d4d4d8"
-          ctx.font = "6.5px sans-serif"
-          ctx.textAlign = "center"
-          ctx.textBaseline = "top"
-          ctx.fillText(truncateLabel(node.label, 16), node.x, node.y + node.radius + 3)
-        }
-        ctx.restore()
+        const alpha = sel && !isSelected && !isHighlighted ? 0.24 : 1
+        drawNode(ctx, node, isSelected, isHighlighted, alpha)
       }
 
       ctx.restore()
@@ -513,10 +587,7 @@ export function MemoryGraph({ commits = [], repoName = "Repository", onQueryComm
 
     animFrameRef.current = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(animFrameRef.current)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [size])
-
-  // ── Coordinate helpers ──────────────────────────────────────────────────────
 
   function canvasToWorld(px: number, py: number) {
     return {
@@ -528,34 +599,31 @@ export function MemoryGraph({ commits = [], repoName = "Repository", onQueryComm
   function hitTest(wx: number, wy: number) {
     const nodes = nodesRef.current
     for (let i = nodes.length - 1; i >= 0; i--) {
-      const n = nodes[i]
-      const dx = n.x - wx
-      const dy = n.y - wy
-      if (dx * dx + dy * dy <= (n.radius + 6) ** 2) return n
+      const node = nodes[i]
+      const dx = node.x - wx
+      const dy = node.y - wy
+      if (dx * dx + dy * dy <= (node.radius + 10) ** 2) return node
     }
     return null
   }
-
-  // ── Pointer events ──────────────────────────────────────────────────────────
 
   const onPointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
     const rect = canvasRef.current!.getBoundingClientRect()
     const cx = e.clientX - rect.left
     const cy = e.clientY - rect.top
-    const w = canvasToWorld(cx, cy)
-    const hit = hitTest(w.x, w.y)
+    const world = canvasToWorld(cx, cy)
+    const hit = hitTest(world.x, world.y)
 
-    // Record down position for click detection (don't use lastPointer for this)
     pointerDownPosRef.current = { x: cx, y: cy }
     lastPointerRef.current = { x: cx, y: cy }
 
     if (hit) {
       draggingNodeRef.current = hit
-      stabilizedRef.current = false // reactivate physics so drag is smooth
-        ; (e.target as HTMLCanvasElement).setPointerCapture(e.pointerId)
+      stabilizedRef.current = false
+      ;(e.target as HTMLCanvasElement).setPointerCapture(e.pointerId)
     } else {
       isPanningRef.current = true
-        ; (e.target as HTMLCanvasElement).setPointerCapture(e.pointerId)
+      ;(e.target as HTMLCanvasElement).setPointerCapture(e.pointerId)
     }
   }
 
@@ -568,9 +636,9 @@ export function MemoryGraph({ commits = [], repoName = "Repository", onQueryComm
     lastPointerRef.current = { x: cx, y: cy }
 
     if (draggingNodeRef.current) {
-      const w = canvasToWorld(cx, cy)
-      draggingNodeRef.current.x = w.x
-      draggingNodeRef.current.y = w.y
+      const world = canvasToWorld(cx, cy)
+      draggingNodeRef.current.x = world.x
+      draggingNodeRef.current.y = world.y
       draggingNodeRef.current.vx = 0
       draggingNodeRef.current.vy = 0
     } else if (isPanningRef.current) {
@@ -583,21 +651,17 @@ export function MemoryGraph({ commits = [], repoName = "Repository", onQueryComm
     const rect = canvasRef.current!.getBoundingClientRect()
     const cx = e.clientX - rect.left
     const cy = e.clientY - rect.top
-
-    // Use distance from pointerDown position to detect click vs drag
     const totalDx = cx - pointerDownPosRef.current.x
     const totalDy = cy - pointerDownPosRef.current.y
-    const movedFar = totalDx * totalDx + totalDy * totalDy > 36  // 6px threshold
+    const movedFar = totalDx * totalDx + totalDy * totalDy > 36
 
     if (draggingNodeRef.current) {
       if (!movedFar) {
-        // It was a click — toggle selection
         const node = draggingNodeRef.current
-        const next = selectedNodeRef.current?.id === node.id ? null : node
-        selectedNodeRef.current = next
-        setSelectedNode(next)
+        const nextId = selectedNodeRef.current === node.id ? null : node.id
+        selectedNodeRef.current = nextId
+        setSelectedSelection(nextId ? { id: node.id, type: node.type } : null)
       } else {
-        // Dropped after drag — pin in place with zero velocity
         draggingNodeRef.current.vx = 0
         draggingNodeRef.current.vy = 0
       }
@@ -605,9 +669,8 @@ export function MemoryGraph({ commits = [], repoName = "Repository", onQueryComm
     } else {
       isPanningRef.current = false
       if (!movedFar) {
-        // Clicked empty space — deselect
         selectedNodeRef.current = null
-        setSelectedNode(null)
+        setSelectedSelection(null)
       }
     }
   }
@@ -618,18 +681,60 @@ export function MemoryGraph({ commits = [], repoName = "Repository", onQueryComm
     const cx = e.clientX - rect.left
     const cy = e.clientY - rect.top
     const factor = e.deltaY > 0 ? 0.88 : 1.14
-    const newScale = Math.max(0.25, Math.min(3.5, scaleRef.current * factor))
+    const newScale = Math.max(0.35, Math.min(3.2, scaleRef.current * factor))
     offsetRef.current.x = cx - (cx - offsetRef.current.x) * (newScale / scaleRef.current)
     offsetRef.current.y = cy - (cy - offsetRef.current.y) * (newScale / scaleRef.current)
     scaleRef.current = newScale
   }
 
-  // ── Derived state for sidebar ───────────────────────────────────────────────
+  const selectedNode = React.useMemo(() => {
+    if (!selectedSelection) return null
+
+    if (selectedSelection.type === "repo" || selectedSelection.id === "repo") {
+      return {
+        id: "repo",
+        type: "repo" as const,
+        label: repoName,
+        borderColor: THEME.repo,
+      }
+    }
+
+    if (selectedSelection.type === "commit") {
+      const commit = commits.find((entry) => entry.id === selectedSelection.id)
+      if (!commit) return null
+      const commitIndex = commits.findIndex((entry) => entry.id === commit.id)
+      return {
+        id: commit.id,
+        type: "commit" as const,
+        label: commit.sha.slice(0, 7),
+        borderColor: COMMIT_COLORS[Math.max(0, commitIndex) % COMMIT_COLORS.length],
+        data: commit,
+      }
+    }
+
+    if (selectedSelection.type === "file") {
+      for (const commit of commits) {
+        const file = commit.files.find((entry) => `file-${entry.id}` === selectedSelection.id)
+        if (file) {
+          return {
+            id: `file-${file.id}`,
+            type: "file" as const,
+            label: file.filePath.split("/").pop() ?? file.filePath,
+            borderColor: getFileStatus(file.status).fill,
+            commitId: commit.id,
+            data: file,
+          }
+        }
+      }
+    }
+
+    return null
+  }, [selectedSelection, commits, repoName])
 
   const selectedCommit: Commit | null = React.useMemo(() => {
     if (!selectedNode) return null
     if (selectedNode.type === "commit") return selectedNode.data as Commit
-    if (selectedNode.type === "file") return commits.find(c => c.id === selectedNode.commitId) ?? null
+    if (selectedNode.type === "file") return commits.find((commit) => commit.id === selectedNode.commitId) ?? null
     return null
   }, [selectedNode, commits])
 
@@ -639,33 +744,55 @@ export function MemoryGraph({ commits = [], repoName = "Repository", onQueryComm
   }, [selectedNode])
 
   const sidebarOpen = !!selectedNode
-
-  // ── Render ──────────────────────────────────────────────────────────────────
+  const selectedFileStatus = selectedFile ? getFileStatus(selectedFile.status) : null
 
   return (
     <div className="relative flex h-full min-h-0 gap-4 overflow-hidden">
-      {/* Canvas panel */}
       <div
         ref={containerRef}
-        className="relative flex-1 min-w-0 rounded-2xl overflow-hidden"
-        style={{ background: "#08080d", border: "1px solid rgba(255,255,255,0.06)" }}
+        className="relative flex-1 min-w-0 overflow-hidden rounded-[2rem] border border-white/8 bg-zinc-950 shadow-[0_24px_80px_rgba(0,0,0,0.42)]"
       >
-        {/* HUD overlay */}
-        <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-2">
-            <div
-              className="h-2 w-2 rounded-full animate-pulse"
-              style={{ background: "#a78bfa", boxShadow: "0 0 8px 2px rgba(167,139,250,0.6)" }}
-            />
-            <span className="font-mono text-[11px] text-zinc-400">Memory Graph</span>
-            <span
-              className="rounded-full px-2 py-0.5 font-mono text-[10px] text-zinc-500"
-              style={{ border: "1px solid rgba(255,255,255,0.07)", background: "rgba(255,255,255,0.04)" }}
-            >
-              {commits.length} commits · {commits.reduce((s, c) => s + c.files.length, 0)} files
+        <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-center justify-between border-b border-white/5 bg-zinc-950/55 px-4 py-3 backdrop-blur-xl">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-[#f3cf8b] shadow-[0_0_0_1px_rgba(255,255,255,0.02)]">
+              <BrainCircuit className="h-4 w-4" />
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="font-mono text-[11px] font-semibold uppercase tracking-[0.24em] text-white">
+                  Memory Graph
+                </span>
+                <span className="rounded-full border border-white/8 bg-white/5 px-2 py-0.5 font-mono text-[10px] text-zinc-300">
+                  {commits.length} commits
+                </span>
+              </div>
+              <div className="mt-1 flex items-center gap-2 text-[11px] text-zinc-400">
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-white/5 bg-white/5 px-2 py-0.5">
+                  <Layers3 className="h-3 w-3 text-[#a78bfa]" />
+                  {commits.reduce((count, commit) => count + commit.files.length, 0)} files
+                </span>
+                <span className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-white/5 bg-white/5 px-2 py-0.5">
+                  <Sparkles className="h-3 w-3 text-[#60a5fa]" />
+                  linked by commit and file relationships
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="hidden items-center gap-2 text-[11px] text-zinc-400 md:flex">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/6 bg-white/5 px-2.5 py-1">
+              <MousePointer2 className="h-3 w-3 text-zinc-300" />
+              click to inspect
+            </span>
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/6 bg-white/5 px-2.5 py-1">
+              <Move3D className="h-3 w-3 text-zinc-300" />
+              drag to pan
+            </span>
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/6 bg-white/5 px-2.5 py-1">
+              <Search className="h-3 w-3 text-zinc-300" />
+              scroll to zoom
             </span>
           </div>
-          <span className="text-[10px] text-zinc-600 font-mono">drag · scroll to zoom · click to inspect</span>
         </div>
 
         <canvas
@@ -681,336 +808,173 @@ export function MemoryGraph({ commits = [], repoName = "Repository", onQueryComm
           onWheel={onWheel}
         />
 
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 flex items-end justify-between gap-3 border-t border-white/5 bg-gradient-to-t from-zinc-950/90 via-zinc-950/45 to-transparent px-4 py-3">
+          <div className="max-w-xl rounded-2xl border border-white/6 bg-zinc-950/55 px-3 py-2 text-[11px] text-zinc-300 backdrop-blur-md">
+            The repo sits at the center, commits orbit as colored anchors, and files
+            branch out as smaller chips. Select a node to reveal the exact diff context.
+          </div>
+          <div className="hidden items-center gap-2 md:flex">
+            <span className="rounded-full border border-white/6 bg-white/5 px-2.5 py-1 text-[10px] font-mono text-zinc-400">
+              repo memory
+            </span>
+            <span className="rounded-full border border-white/6 bg-white/5 px-2.5 py-1 text-[10px] font-mono text-zinc-400">
+              commit lineage
+            </span>
+            <span className="rounded-full border border-white/6 bg-white/5 px-2.5 py-1 text-[10px] font-mono text-zinc-400">
+              file diffs
+            </span>
+          </div>
+        </div>
+
         {commits.length === 0 && (
-          <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-3">
-            <div
-              className="h-14 w-14 rounded-full flex items-center justify-center"
-              style={{ border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.03)" }}
-            >
-              <BrainCircuit className="h-7 w-7 text-zinc-600" />
+          <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-4">
+            <div className="flex h-16 w-16 items-center justify-center rounded-[1.5rem] border border-white/8 bg-white/5 text-[#f3cf8b] shadow-[0_0_50px_rgba(167,139,250,0.08)]">
+              <BrainCircuit className="h-7 w-7" />
             </div>
-            <p className="text-xs text-zinc-600 font-mono">No commits indexed yet</p>
+            <div className="text-center">
+              <p className="text-sm font-medium text-white">No commits indexed yet</p>
+              <p className="mt-1 text-xs text-zinc-500">
+                Add a repository to see the graph come alive.
+              </p>
+            </div>
           </div>
         )}
       </div>
 
-      {/* Sidebar — slides in */}
       <div
-        className="flex flex-col rounded-2xl overflow-hidden transition-all duration-200 shrink-0"
+        className="flex shrink-0 flex-col overflow-hidden rounded-[2rem] border border-white/8 bg-zinc-950/80 shadow-[0_24px_80px_rgba(0,0,0,0.38)] backdrop-blur-xl transition-all duration-200"
         style={{
-          width: sidebarOpen ? "17rem" : "0",
+          width: sidebarOpen ? "19rem" : "0",
           opacity: sidebarOpen ? 1 : 0,
-          border: sidebarOpen ? "1px solid rgba(255,255,255,0.07)" : "none",
-          background: sidebarOpen ? "rgba(10,10,16,0.92)" : "transparent",
-          backdropFilter: "blur(16px)",
+          borderColor: sidebarOpen ? "rgba(255,255,255,0.09)" : "transparent",
         }}
       >
         {selectedNode && (
           <>
-            {/* Sidebar header */}
-            <div
-              className="flex items-center justify-between shrink-0 px-4 py-3"
-              style={{
-                borderBottom: "1px solid rgba(255,255,255,0.07)",
-                background: `hsla(${selectedNode.hue},50%,15%,0.6)`,
-              }}
-            >
-              <div className="flex items-center gap-2 min-w-0">
-                {selectedNode.type === "commit" ? (
-                  <GitCommit className="h-3.5 w-3.5 shrink-0" style={{ color: hslStr(selectedNode.hue, 80, 70) }} />
-                ) : selectedNode.type === "file" ? (
-                  <FileCode className="h-3.5 w-3.5 shrink-0" style={{ color: hslStr(selectedNode.hue, 75, 65) }} />
-                ) : (
-                  <BrainCircuit className="h-3.5 w-3.5 shrink-0 text-violet-400" />
-                )}
-                <span className="font-mono text-xs font-semibold text-zinc-100 truncate">
-                  {selectedNode.type === "repo" ? repoName : selectedNode.label}
-                </span>
-              </div>
-              <button
-                onClick={() => { selectedNodeRef.current = null; setSelectedNode(null) }}
-                className="shrink-0 ml-2 rounded-md p-1 transition-colors cursor-pointer"
-                style={{ color: "#71717a" }}
-                onMouseEnter={e => (e.currentTarget.style.color = "#d4d4d8")}
-                onMouseLeave={e => (e.currentTarget.style.color = "#71717a")}
-              >
-                <X className="h-3.5 w-3.5" />
-              </button>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-0">
-              {/* Repo node info */}
-              {selectedNode.type === "repo" && (
-                <>
-                  <div
-                    className="rounded-xl p-3 space-y-3"
-                    style={{ border: "1px solid rgba(255,255,255,0.07)", background: "rgba(255,255,255,0.03)" }}
-                  >
-                    <div className="text-[10px] uppercase font-mono tracking-wider text-zinc-500">Repository</div>
-                    <div className="font-mono text-sm text-violet-300 break-all">{repoName}</div>
-                  </div>
-                  <div
-                    className="rounded-xl p-3 grid grid-cols-2 gap-3"
-                    style={{ border: "1px solid rgba(255,255,255,0.07)", background: "rgba(255,255,255,0.03)" }}
-                  >
-                    <div>
-                      <div className="text-[10px] text-zinc-500 font-mono mb-1">Commits</div>
-                      <div className="text-2xl font-bold text-zinc-100">{commits.length}</div>
-                    </div>
-                    <div>
-                      <div className="text-[10px] text-zinc-500 font-mono mb-1">Total Files</div>
-                      <div className="text-2xl font-bold text-zinc-100">
-                        {commits.reduce((s, c) => s + c.files.length, 0)}
-                      </div>
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {/* Commit details */}
-              {selectedCommit && (
-                <div className="space-y-3">
-                  <div
-                    className="rounded-xl p-3 space-y-2.5"
-                    style={{ border: "1px solid rgba(255,255,255,0.07)", background: "rgba(255,255,255,0.03)" }}
-                  >
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <span
-                        className="font-mono text-xs px-1.5 py-0.5 rounded"
-                        style={{
-                          color: hslStr(selectedNode.type === "commit" ? selectedNode.hue : 265, 80, 75),
-                          background: hslStr(selectedNode.type === "commit" ? selectedNode.hue : 265, 60, 20, 0.4),
-                          border: `1px solid ${hslStr(selectedNode.type === "commit" ? selectedNode.hue : 265, 60, 40, 0.4)}`,
-                        }}
-                      >
-                        {selectedCommit.sha.slice(0, 7)}
-                      </span>
-                      <span className="font-mono text-[10px] text-zinc-500">
-                        {new Date(selectedCommit.committedAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
-                      </span>
-                    </div>
-                    <p className="text-xs text-zinc-200 leading-relaxed">{selectedCommit.message}</p>
-
-                    {/* Author avatar row */}
-                    <div className="flex items-center gap-2.5 pt-0.5">
-                      {selectedCommit.authorImage ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={selectedCommit.authorImage}
-                          alt={selectedCommit.authorName ?? "Author"}
-                          className="h-7 w-7 rounded-full object-cover ring-1"
-                          style={{
-                            ringColor: hslStr(selectedNode.type === "commit" ? selectedNode.hue : 265, 70, 55, 0.5),
-                            boxShadow: `0 0 0 1.5px ${hslStr(selectedNode.type === "commit" ? selectedNode.hue : 265, 70, 55, 0.45)}`,
-                          }}
-                          onError={e => { (e.currentTarget as HTMLImageElement).style.display = "none" }}
-                        />
-                      ) : (
-                        /* Initials fallback */
-                        <div
-                          className="h-7 w-7 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0"
-                          style={{
-                            background: hslStr(selectedNode.type === "commit" ? selectedNode.hue : 265, 65, 28, 0.8),
-                            color: hslStr(selectedNode.type === "commit" ? selectedNode.hue : 265, 80, 82),
-                            border: `1px solid ${hslStr(selectedNode.type === "commit" ? selectedNode.hue : 265, 60, 50, 0.4)}`,
-                          }}
-                        >
-                          {(selectedCommit.authorName ?? "?")
-                            .trim()
-                            .split(/\s+/)
-                            .slice(0, 2)
-                            .map(p => p[0]?.toUpperCase() ?? "")
-                            .join("")}
-                        </div>
-                      )}
-                      <div className="min-w-0">
-                        <div className="text-xs font-medium text-zinc-300 truncate">
-                          {selectedCommit.authorName ?? "Unknown Author"}
-                        </div>
-                        <div className="text-[10px] text-zinc-600 font-mono">
-                          {new Date(selectedCommit.committedAt).toLocaleString(undefined, {
-                            month: "short", day: "numeric",
-                            hour: "2-digit", minute: "2-digit",
-                          })}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <Button
-                    onClick={() => onQueryCommit?.(selectedCommit.sha)}
-                    className="w-full rounded-full font-medium text-xs gap-2 py-4 cursor-pointer transition-all"
-                    style={{
-                      background: "#fff",
-                      color: "#09090b",
-                    }}
-                  >
-                    <BrainCircuit className="h-4 w-4" />
-                    Ask AI about this commit
-                  </Button>
+            <div className="flex items-center justify-between border-b border-white/6 bg-white/[0.03] px-4 py-3">
+              <div className="min-w-0">
+                <div className="text-[10px] font-mono uppercase tracking-[0.24em] text-zinc-500">
+                  Selection
                 </div>
-              )}
-
-              {/* File details */}
-              {selectedFile && (
-                <div
-                  className="rounded-xl p-3 space-y-2.5"
-                  style={{ border: "1px solid rgba(255,255,255,0.07)", background: "rgba(255,255,255,0.03)" }}
-                >
-                  <div className="text-[10px] uppercase font-mono tracking-wider text-zinc-500">Changed File</div>
-                  <p className="font-mono text-[11px] text-zinc-300 break-all leading-relaxed">{selectedFile.filePath}</p>
-                  <span
-                    className="inline-block capitalize rounded-full px-2 py-0.5 text-[10px] font-semibold"
-                    style={{
-                      color: hslStr(selectedNode.hue, selectedNode.saturation, selectedNode.lightness + 20),
-                      background: hslStr(selectedNode.hue, selectedNode.saturation, selectedNode.lightness, 0.18),
-                      border: `1px solid ${hslStr(selectedNode.hue, selectedNode.saturation, selectedNode.lightness, 0.4)}`,
-                    }}
-                  >
-                    {selectedFile.status ?? "modified"}
+                <div className="mt-1 flex items-center gap-2">
+                  {selectedNode.type === "commit" ? (
+                    <GitCommit className="h-4 w-4 shrink-0 text-[#a78bfa]" />
+                  ) : selectedNode.type === "file" ? (
+                    <FileCode className="h-4 w-4 shrink-0 text-[#60a5fa]" />
+                  ) : (
+                    <GitBranch className="h-4 w-4 shrink-0 text-[#f3cf8b]" />
+                  )}
+                  <span className="truncate text-sm font-semibold text-white">
+                    {selectedNode.type === "repo" ? repoName : selectedNode.label}
                   </span>
-                  <div className="flex items-center gap-4 text-[11px] font-mono pt-0.5">
-                    <span className="flex items-center gap-1" style={{ color: "#34d399" }}>
-                      <Plus className="h-3 w-3" />{selectedFile.additions}
-                    </span>
-                    <span className="flex items-center gap-1" style={{ color: "#f87171" }}>
-                      <Minus className="h-3 w-3" />{selectedFile.deletions}
-                    </span>
-                  </div>
-                </div>
-              )}
-
-              {/* Legend */}
-              <div
-                className="rounded-xl p-3 space-y-2"
-                style={{ border: "1px solid rgba(255,255,255,0.05)", background: "rgba(255,255,255,0.02)" }}
-              >
-                <div className="text-[10px] uppercase font-mono tracking-wider text-zinc-600">Legend</div>
-                <div className="space-y-1.5">
-                  {([
-                    [265, 70, 40, "Repository (center)"],
-                    [260, 80, 45, "Commit nodes (each unique color)"],
-                    [152, 72, 52, "Added file"],
-                    [4, 74, 62, "Deleted / removed file"],
-                    [42, 92, 58, "Modified file"],
-                  ] as [number, number, number, string][]).map(([h, s, l, label]) => (
-                    <div key={label} className="flex items-center gap-2">
-                      <div
-                        className="h-2.5 w-2.5 rounded-full shrink-0"
-                        style={{ background: hslStr(h, s, l) }}
-                      />
-                      <span className="text-[11px] text-zinc-500">{label}</span>
-                    </div>
-                  ))}
                 </div>
               </div>
-            </div>
-          </>
-        )}
-      </div>
-    </div>
-  )
-}
-{/* Sidebar header */ }
-            <div
-              className="flex items-center justify-between shrink-0 px-4 py-3"
-              style={{ borderBottom: "1px solid #30363d", background: "#0d1117" }}
-            >
-              <div className="flex items-center gap-2 min-w-0">
-                {selectedNode.type === "commit" ? (
-                  <GitCommit className="h-3.5 w-3.5 shrink-0" style={{ color: hsl(commitHue, 75, 65) }} />
-                ) : selectedNode.type === "file" ? (
-                  <FileCode className="h-3.5 w-3.5 shrink-0" style={{ color: fileStatus(selectedNode.fileStatus).gh }} />
-                ) : (
-                  <GitBranch className="h-3.5 w-3.5 shrink-0" style={{ color: "#f0c040" }} />
-                )}
-                <span className="font-mono text-xs font-semibold truncate" style={{ color: "#e6edf3" }}>
-                  {selectedNode.type === "repo" ? repoName : selectedNode.label}
-                </span>
-              </div>
-              <button
-                onClick={() => { selectedNodeRef.current = null; setSelectedNode(null) }}
-                className="shrink-0 ml-2 rounded-md p-1 cursor-pointer transition-colors"
-                style={{ color: "#484f58" }}
-                onMouseEnter={e => ((e.currentTarget as HTMLElement).style.color = "#e6edf3")}
-                onMouseLeave={e => ((e.currentTarget as HTMLElement).style.color = "#484f58")}
+                <button
+                  onClick={() => {
+                    selectedNodeRef.current = null
+                    setSelectedSelection(null)
+                  }}
+                className="rounded-full border border-white/8 bg-white/5 p-2 text-zinc-400 transition-colors hover:bg-white/10 hover:text-white"
+                aria-label="Close selection"
               >
                 <X className="h-3.5 w-3.5" />
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto min-h-0" style={{ scrollbarWidth: "thin", scrollbarColor: "#30363d #161b22" }}>
-              <div className="p-4 space-y-3">
-
-                {/* ── Repo stats ─────────────────────────────────────────── */}
+            <div className="flex-1 min-h-0 overflow-y-auto">
+              <div className="space-y-4 p-4">
                 {selectedNode.type === "repo" && (
                   <>
-                    <div className="rounded-lg p-3 space-y-2.5" style={{ border: "1px solid #30363d", background: "#0d1117" }}>
-                      <div className="text-[10px] uppercase font-mono tracking-wider" style={{ color: "#484f58" }}>Repository</div>
-                      <div className="font-mono text-sm break-all" style={{ color: "#f0c040" }}>{repoName}</div>
+                    <div className="rounded-[1.25rem] border border-white/8 bg-white/[0.03] p-4">
+                      <div className="text-[10px] font-mono uppercase tracking-[0.24em] text-zinc-500">
+                        Repository
+                      </div>
+                      <div className="mt-2 text-base font-semibold text-[#f3cf8b] break-all">
+                        {repoName}
+                      </div>
+                      <p className="mt-2 text-xs leading-6 text-zinc-400">
+                        The root node anchors every commit and file in the graph.
+                      </p>
                     </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      {[["Commits", commits.length], ["Total Files", commits.reduce((s, c) => s + c.files.length, 0)]].map(([label, val]) => (
-                        <div key={String(label)} className="rounded-lg p-3" style={{ border: "1px solid #30363d", background: "#0d1117" }}>
-                          <div className="text-[10px] font-mono mb-1" style={{ color: "#484f58" }}>{label}</div>
-                          <div className="text-xl font-bold" style={{ color: "#e6edf3" }}>{val}</div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      {[
+                        ["Commits", commits.length],
+                        ["Files", commits.reduce((count, commit) => count + commit.files.length, 0)],
+                      ].map(([label, value]) => (
+                        <div key={String(label)} className="rounded-[1.15rem] border border-white/8 bg-white/[0.03] p-3">
+                          <div className="text-[10px] font-mono uppercase tracking-[0.22em] text-zinc-500">
+                            {label}
+                          </div>
+                          <div className="mt-2 text-2xl font-semibold text-white">
+                            {value}
+                          </div>
                         </div>
                       ))}
                     </div>
                   </>
                 )}
 
-                {/* ── Commit card ────────────────────────────────────────── */}
                 {selectedCommit && (
                   <div className="space-y-3">
-                    <div className="rounded-lg p-3 space-y-3" style={{ border: "1px solid #30363d", background: "#0d1117" }}>
-                      {/* SHA + date row */}
-                      <div className="flex items-center gap-2 flex-wrap">
+                    <div className="rounded-[1.25rem] border border-white/8 bg-white/[0.03] p-4">
+                      <div className="flex flex-wrap items-center gap-2">
                         <span
-                          className="font-mono text-xs px-2 py-0.5 rounded-full font-semibold"
-                          style={{ background: "#3fb950" + "22", color: "#3fb950", border: "1px solid #3fb95044" }}
+                          className="rounded-full border px-2.5 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.18em]"
+                          style={{
+                            borderColor: `${selectedNode.borderColor}55`,
+                            background: `${selectedNode.borderColor}16`,
+                            color: selectedNode.borderColor,
+                          }}
                         >
                           {selectedCommit.sha.slice(0, 7)}
                         </span>
-                        <span className="font-mono text-[10px]" style={{ color: "#484f58" }}>
-                          {new Date(selectedCommit.committedAt).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
+                        <span className="rounded-full border border-white/8 bg-white/5 px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.18em] text-zinc-400">
+                          {selectedCommit.files.length} files
                         </span>
                       </div>
 
-                      {/* Message */}
-                      <p className="text-xs leading-relaxed" style={{ color: "#e6edf3" }}>
+                      <p className="mt-3 text-sm leading-6 text-zinc-200">
                         {selectedCommit.message}
                       </p>
 
-                      {/* Author row */}
-                      <div className="flex items-center gap-2.5 pt-0.5">
+                      <div className="mt-4 flex items-center gap-3">
                         {selectedCommit.authorImage ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img
                             src={selectedCommit.authorImage}
                             alt={selectedCommit.authorName ?? "Author"}
-                            className="h-7 w-7 rounded-full object-cover"
-                            style={{ boxShadow: `0 0 0 1.5px ${hsl(commitHue, 70, 55, 0.5)}` }}
-                            onError={e => { (e.currentTarget as HTMLImageElement).style.display = "none" }}
+                            className="h-9 w-9 rounded-full object-cover ring-1 ring-white/10"
+                            onError={(e) => {
+                              (e.currentTarget as HTMLImageElement).style.display = "none"
+                            }}
                           />
                         ) : (
                           <div
-                            className="h-7 w-7 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0"
+                            className="flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold ring-1 ring-white/10"
                             style={{
-                              background: hsl(commitHue, 60, 20),
-                              color: hsl(commitHue, 80, 78),
-                              border: `1px solid ${hsl(commitHue, 60, 40, 0.4)}`,
+                              background: `${selectedNode.borderColor}18`,
+                              color: selectedNode.borderColor,
                             }}
                           >
-                            {(selectedCommit.authorName ?? "?").trim().split(/\s+/).slice(0, 2).map(p => p[0]?.toUpperCase() ?? "").join("")}
+                            {(selectedCommit.authorName ?? "?")
+                              .trim()
+                              .split(/\s+/)
+                              .slice(0, 2)
+                              .map((part) => part[0]?.toUpperCase() ?? "")
+                              .join("")}
                           </div>
                         )}
                         <div className="min-w-0">
-                          <div className="text-xs font-medium truncate" style={{ color: "#c9d1d9" }}>
-                            {selectedCommit.authorName ?? "Unknown"}
+                          <div className="truncate text-sm font-medium text-white">
+                            {selectedCommit.authorName ?? "Unknown author"}
                           </div>
-                          <div className="text-[10px] font-mono" style={{ color: "#484f58" }}>
-                            {new Date(selectedCommit.committedAt).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}
+                          <div className="text-[11px] text-zinc-500">
+                            {new Date(selectedCommit.committedAt).toLocaleDateString(undefined, {
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric",
+                            })}
                           </div>
                         </div>
                       </div>
@@ -1018,10 +982,7 @@ export function MemoryGraph({ commits = [], repoName = "Repository", onQueryComm
 
                     <Button
                       onClick={() => onQueryCommit?.(selectedCommit.sha)}
-                      className="w-full rounded-lg font-medium text-xs gap-2 py-4 cursor-pointer"
-                      style={{ background: "#238636", color: "#fff", border: "1px solid #2ea043" }}
-                      onMouseEnter={e => ((e.currentTarget as HTMLElement).style.background = "#2ea043")}
-                      onMouseLeave={e => ((e.currentTarget as HTMLElement).style.background = "#238636")}
+                      className="w-full rounded-2xl border border-[#a78bfa]/25 bg-[#a78bfa] px-4 py-5 text-xs font-semibold text-zinc-950 shadow-[0_14px_30px_rgba(167,139,250,0.16)] transition-transform hover:scale-[1.01] hover:bg-[#c4b5fd] cursor-pointer"
                     >
                       <BrainCircuit className="h-4 w-4" />
                       Ask AI about this commit
@@ -1029,61 +990,65 @@ export function MemoryGraph({ commits = [], repoName = "Repository", onQueryComm
                   </div>
                 )}
 
-                {/* ── File card ──────────────────────────────────────────── */}
-                {selectedFile && (() => {
-                  const fs = fileStatus(selectedFile.status)
+                {selectedFile && selectedFileStatus && (() => {
+                  const total = selectedFile.additions + selectedFile.deletions
+                  const addPct = total > 0 ? (selectedFile.additions / total) * 100 : 0
+
                   return (
-                    <div className="rounded-lg p-3 space-y-2.5" style={{ border: "1px solid #30363d", background: "#0d1117" }}>
-                      <div className="text-[10px] uppercase font-mono tracking-wider" style={{ color: "#484f58" }}>Changed File</div>
-                      <p className="font-mono text-[11px] break-all leading-relaxed" style={{ color: "#c9d1d9" }}>
+                    <div className="space-y-3 rounded-[1.25rem] border border-white/8 bg-white/[0.03] p-4">
+                      <div className="text-[10px] font-mono uppercase tracking-[0.24em] text-zinc-500">
+                        Changed file
+                      </div>
+                      <p className="break-all font-mono text-[11px] leading-6 text-zinc-300">
                         {selectedFile.filePath}
                       </p>
                       <span
-                        className="inline-block capitalize rounded-full px-2 py-0.5 text-[10px] font-semibold"
-                        style={{ color: fs.gh, background: fs.gh + "18", border: `1px solid ${fs.gh}44` }}
+                        className="inline-flex w-fit items-center rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em]"
+                        style={{
+                          color: selectedFileStatus.fill,
+                          background: selectedFileStatus.glow,
+                          borderColor: selectedFileStatus.border,
+                        }}
                       >
                         {selectedFile.status ?? "modified"}
                       </span>
-                      {/* GitHub-style diff stats bar */}
-                      <div className="space-y-1.5 pt-1">
-                        <div className="flex items-center gap-2 text-[11px] font-mono">
-                          <span className="flex items-center gap-1" style={{ color: "#3fb950" }}>
-                            <Plus className="h-3 w-3" />{selectedFile.additions}
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-4 text-[11px] font-mono">
+                          <span className="inline-flex items-center gap-1.5 text-[#4ade80]">
+                            <Plus className="h-3 w-3" />
+                            {selectedFile.additions}
                           </span>
-                          <span className="flex items-center gap-1" style={{ color: "#f85149" }}>
-                            <Minus className="h-3 w-3" />{selectedFile.deletions}
+                          <span className="inline-flex items-center gap-1.5 text-[#fb7185]">
+                            <Minus className="h-3 w-3" />
+                            {selectedFile.deletions}
                           </span>
                         </div>
-                        {/* Mini diff bar */}
-                        {(selectedFile.additions + selectedFile.deletions) > 0 && (() => {
-                          const total = selectedFile.additions + selectedFile.deletions
-                          const addPct = (selectedFile.additions / total) * 100
-                          return (
-                            <div className="flex h-1.5 rounded-full overflow-hidden gap-0.5">
-                              <div className="rounded-full" style={{ width: `${addPct}%`, background: "#3fb950" }} />
-                              <div className="rounded-full flex-1" style={{ background: "#f85149" }} />
-                            </div>
-                          )
-                        })()}
+                        {total > 0 && (
+                          <div className="h-1.5 overflow-hidden rounded-full bg-white/6">
+                            <div className="h-full rounded-full bg-[#4ade80]" style={{ width: `${addPct}%` }} />
+                          </div>
+                        )}
                       </div>
                     </div>
                   )
                 })()}
 
-                {/* ── Legend ─────────────────────────────────────────────── */}
-                <div className="rounded-lg p-3 space-y-2" style={{ border: "1px solid #21262d", background: "#0d1117" }}>
-                  <div className="text-[10px] uppercase font-mono tracking-wider" style={{ color: "#484f58" }}>Legend</div>
-                  <div className="space-y-1.5">
-                    {([
-                      { color: "#f0c040", label: "★ Repository (sun)" },
-                      { color: hsl(195, 80, 55), label: "● Commit (planet)" },
-                      { color: "#3fb950", label: "◉ Added file" },
-                      { color: "#f85149", label: "◉ Deleted file" },
-                      { color: "#d29922", label: "◉ Modified file" },
-                    ]).map(item => (
+                <div className="rounded-[1.25rem] border border-white/8 bg-white/[0.03] p-4">
+                  <div className="text-[10px] font-mono uppercase tracking-[0.24em] text-zinc-500">
+                    Legend
+                  </div>
+                  <div className="mt-3 space-y-2">
+                    {[
+                      { color: THEME.repo, label: "Repository root" },
+                      { color: THEME.accent, label: "Commit node" },
+                      { color: THEME.success, label: "Added file" },
+                      { color: THEME.danger, label: "Deleted file" },
+                      { color: THEME.warning, label: "Modified file" },
+                      { color: THEME.info, label: "Copied file" },
+                    ].map((item) => (
                       <div key={item.label} className="flex items-center gap-2">
-                        <div className="h-2 w-2 rounded-full shrink-0" style={{ background: item.color }} />
-                        <span className="text-[11px] font-mono" style={{ color: "#484f58" }}>{item.label}</span>
+                        <span className="h-2.5 w-2.5 rounded-full" style={{ background: item.color }} />
+                        <span className="text-[11px] text-zinc-400">{item.label}</span>
                       </div>
                     ))}
                   </div>
@@ -1092,7 +1057,7 @@ export function MemoryGraph({ commits = [], repoName = "Repository", onQueryComm
             </div>
           </>
         )}
-      </div >
-    </div >
+      </div>
+    </div>
   )
 }

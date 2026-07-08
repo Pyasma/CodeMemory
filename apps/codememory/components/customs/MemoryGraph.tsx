@@ -68,6 +68,8 @@ interface Edge {
   color: string
 }
 
+type GraphMode = "graph" | "timeline"
+
 const THEME = {
   bg: "#08080c",
   bgSoft: "#101017",
@@ -295,9 +297,24 @@ export function MemoryGraph({ commits = [], repoName = "Repository", onQueryComm
 
   const [selectedSelection, setSelectedSelection] = React.useState<{ id: string; type: NodeType } | null>(null)
   const selectedNodeRef = React.useRef<string | null>(null)
+  const [graphMode, setGraphMode] = React.useState<GraphMode>("graph")
   const [size, setSize] = React.useState({ w: 800, h: 500 })
 
   React.useEffect(() => {
+    selectedNodeRef.current = selectedSelection?.id ?? null
+  }, [selectedSelection])
+
+  React.useEffect(() => {
+    if (graphMode !== "graph") {
+      nodesRef.current = []
+      edgesRef.current = []
+      tickCountRef.current = 0
+      stabilizedRef.current = true
+      draggingNodeRef.current = null
+      isPanningRef.current = false
+      return
+    }
+
     const w = size.w
     const h = size.h
     const cx = w / 2
@@ -376,10 +393,9 @@ export function MemoryGraph({ commits = [], repoName = "Repository", onQueryComm
     edgesRef.current = edges
     tickCountRef.current = 0
     stabilizedRef.current = false
-    selectedNodeRef.current = null
     offsetRef.current = { x: 0, y: 0 }
     scaleRef.current = 1
-  }, [commits, repoName, size.w, size.h])
+  }, [commits, graphMode, repoName, size.w, size.h])
 
   React.useEffect(() => {
     const el = containerRef.current
@@ -395,6 +411,13 @@ export function MemoryGraph({ commits = [], repoName = "Repository", onQueryComm
   }, [])
 
   React.useEffect(() => {
+    if (graphMode !== "graph") {
+      if (animFrameRef.current) {
+        cancelAnimationFrame(animFrameRef.current)
+      }
+      return
+    }
+
     const canvas = canvasRef.current
     if (!canvas) return
     const ctx = canvas.getContext("2d")
@@ -532,7 +555,7 @@ export function MemoryGraph({ commits = [], repoName = "Repository", onQueryComm
         ctx.stroke()
       }
 
-      const nodeById = new Map(nodes.map((node) => [node.id, node]))
+      const nodeById = new Map<string, Node>(nodes.map((node) => [node.id, node]))
       const sel = selectedNodeRef.current ? nodeById.get(selectedNodeRef.current) ?? null : null
 
       for (const edge of edges) {
@@ -587,7 +610,7 @@ export function MemoryGraph({ commits = [], repoName = "Repository", onQueryComm
 
     animFrameRef.current = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(animFrameRef.current)
-  }, [size])
+  }, [graphMode, size])
 
   function canvasToWorld(px: number, py: number) {
     return {
@@ -745,6 +768,7 @@ export function MemoryGraph({ commits = [], repoName = "Repository", onQueryComm
 
   const sidebarOpen = !!selectedNode
   const selectedFileStatus = selectedFile ? getFileStatus(selectedFile.status) : null
+  const visibleCommits = commits.slice(0, 30)
 
   return (
     <div className="relative flex h-full min-h-0 gap-4 overflow-hidden">
@@ -752,7 +776,7 @@ export function MemoryGraph({ commits = [], repoName = "Repository", onQueryComm
         ref={containerRef}
         className="relative flex-1 min-w-0 overflow-hidden rounded-[2rem] border border-white/8 bg-zinc-950 shadow-[0_24px_80px_rgba(0,0,0,0.42)]"
       >
-        <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-center justify-between border-b border-white/5 bg-zinc-950/55 px-4 py-3 backdrop-blur-xl">
+        <div className="absolute inset-x-0 top-0 z-10 flex items-center justify-between border-b border-white/5 bg-zinc-950/55 px-4 py-3 backdrop-blur-xl">
           <div className="flex items-center gap-3">
             <div className="flex h-9 w-9 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-[#f3cf8b] shadow-[0_0_0_1px_rgba(255,255,255,0.02)]">
               <BrainCircuit className="h-4 w-4" />
@@ -779,63 +803,232 @@ export function MemoryGraph({ commits = [], repoName = "Repository", onQueryComm
             </div>
           </div>
 
-          <div className="hidden items-center gap-2 text-[11px] text-zinc-400 md:flex">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/6 bg-white/5 px-2.5 py-1">
-              <MousePointer2 className="h-3 w-3 text-zinc-300" />
-              click to inspect
-            </span>
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/6 bg-white/5 px-2.5 py-1">
-              <Move3D className="h-3 w-3 text-zinc-300" />
-              drag to pan
-            </span>
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/6 bg-white/5 px-2.5 py-1">
-              <Search className="h-3 w-3 text-zinc-300" />
-              scroll to zoom
-            </span>
-          </div>
-        </div>
-
-        <canvas
-          ref={canvasRef}
-          width={size.w}
-          height={size.h}
-          className="block h-full w-full select-none"
-          style={{ touchAction: "none", cursor: "grab" }}
-          onPointerDown={onPointerDown}
-          onPointerMove={onPointerMove}
-          onPointerUp={onPointerUp}
-          onPointerLeave={onPointerUp}
-          onWheel={onWheel}
-        />
-
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 flex items-end justify-between gap-3 border-t border-white/5 bg-gradient-to-t from-zinc-950/90 via-zinc-950/45 to-transparent px-4 py-3">
-          <div className="max-w-xl rounded-2xl border border-white/6 bg-zinc-950/55 px-3 py-2 text-[11px] text-zinc-300 backdrop-blur-md">
-            The repo sits at the center, commits orbit as colored anchors, and files
-            branch out as smaller chips. Select a node to reveal the exact diff context.
-          </div>
-          <div className="hidden items-center gap-2 md:flex">
-            <span className="rounded-full border border-white/6 bg-white/5 px-2.5 py-1 text-[10px] font-mono text-zinc-400">
-              repo memory
-            </span>
-            <span className="rounded-full border border-white/6 bg-white/5 px-2.5 py-1 text-[10px] font-mono text-zinc-400">
-              commit lineage
-            </span>
-            <span className="rounded-full border border-white/6 bg-white/5 px-2.5 py-1 text-[10px] font-mono text-zinc-400">
-              file diffs
-            </span>
-          </div>
-        </div>
-
-        {commits.length === 0 && (
-          <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-4">
-            <div className="flex h-16 w-16 items-center justify-center rounded-[1.5rem] border border-white/8 bg-white/5 text-[#f3cf8b] shadow-[0_0_50px_rgba(167,139,250,0.08)]">
-              <BrainCircuit className="h-7 w-7" />
+          <div className="flex items-center gap-3">
+            <div className="inline-flex rounded-full border border-white/6 bg-white/5 p-1 text-[11px] text-zinc-400">
+              <button
+                type="button"
+                onClick={() => setGraphMode("graph")}
+                className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 font-medium transition-colors ${
+                  graphMode === "graph" ? "bg-white text-zinc-950" : "text-zinc-300 hover:text-white"
+                }`}
+              >
+                <BrainCircuit className="h-3.5 w-3.5" />
+                Graph
+              </button>
+              <button
+                type="button"
+                onClick={() => setGraphMode("timeline")}
+                className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 font-medium transition-colors ${
+                  graphMode === "timeline" ? "bg-white text-zinc-950" : "text-zinc-300 hover:text-white"
+                }`}
+              >
+                <Layers3 className="h-3.5 w-3.5" />
+                Timeline
+              </button>
             </div>
-            <div className="text-center">
-              <p className="text-sm font-medium text-white">No commits indexed yet</p>
-              <p className="mt-1 text-xs text-zinc-500">
-                Add a repository to see the graph come alive.
-              </p>
+
+            <div className="hidden items-center gap-2 text-[11px] text-zinc-400 md:flex">
+              {graphMode === "graph" ? (
+                <>
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-white/6 bg-white/5 px-2.5 py-1">
+                    <MousePointer2 className="h-3 w-3 text-zinc-300" />
+                    click to inspect
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-white/6 bg-white/5 px-2.5 py-1">
+                    <Move3D className="h-3 w-3 text-zinc-300" />
+                    drag to pan
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-white/6 bg-white/5 px-2.5 py-1">
+                    <Search className="h-3 w-3 text-zinc-300" />
+                    scroll to zoom
+                  </span>
+                </>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-white/6 bg-white/5 px-2.5 py-1">
+                  <Layers3 className="h-3 w-3 text-zinc-300" />
+                  lightweight list view
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {graphMode === "graph" ? (
+          <>
+            <canvas
+              ref={canvasRef}
+              width={size.w}
+              height={size.h}
+              className="block h-full w-full select-none"
+              style={{ touchAction: "none", cursor: "grab" }}
+              onPointerDown={onPointerDown}
+              onPointerMove={onPointerMove}
+              onPointerUp={onPointerUp}
+              onPointerLeave={onPointerUp}
+              onWheel={onWheel}
+            />
+
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 flex items-end justify-between gap-3 border-t border-white/5 bg-gradient-to-t from-zinc-950/90 via-zinc-950/45 to-transparent px-4 py-3">
+              <div className="max-w-xl rounded-2xl border border-white/6 bg-zinc-950/55 px-3 py-2 text-[11px] text-zinc-300 backdrop-blur-md">
+                The repo sits at the center, commits orbit as colored anchors, and files
+                branch out as smaller chips. Select a node to reveal the exact diff context.
+              </div>
+              <div className="hidden items-center gap-2 md:flex">
+                <span className="rounded-full border border-white/6 bg-white/5 px-2.5 py-1 text-[10px] font-mono text-zinc-400">
+                  repo memory
+                </span>
+                <span className="rounded-full border border-white/6 bg-white/5 px-2.5 py-1 text-[10px] font-mono text-zinc-400">
+                  commit lineage
+                </span>
+                <span className="rounded-full border border-white/6 bg-white/5 px-2.5 py-1 text-[10px] font-mono text-zinc-400">
+                  file diffs
+                </span>
+              </div>
+            </div>
+
+            {commits.length === 0 && (
+              <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-4">
+                <div className="flex h-16 w-16 items-center justify-center rounded-[1.5rem] border border-white/8 bg-white/5 text-[#f3cf8b] shadow-[0_0_50px_rgba(167,139,250,0.08)]">
+                  <BrainCircuit className="h-7 w-7" />
+                </div>
+                <div className="text-center">
+                  <p className="text-sm font-medium text-white">No commits indexed yet</p>
+                  <p className="mt-1 text-xs text-zinc-500">
+                    Add a repository to see the graph come alive.
+                  </p>
+                </div>
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="absolute inset-0 overflow-y-auto px-4 pb-4 pt-16">
+            <div className="relative mx-auto max-w-4xl">
+              <div className="absolute left-5 top-0 h-full w-px bg-gradient-to-b from-[#f3cf8b]/35 via-white/10 to-transparent" />
+
+              {visibleCommits.length === 0 ? (
+                <div className="flex min-h-[28rem] flex-col items-center justify-center gap-4">
+                  <div className="flex h-16 w-16 items-center justify-center rounded-[1.5rem] border border-white/8 bg-white/5 text-[#f3cf8b] shadow-[0_0_50px_rgba(167,139,250,0.08)]">
+                    <BrainCircuit className="h-7 w-7" />
+                  </div>
+                  <div className="text-center">
+                    <p className="text-sm font-medium text-white">No commits indexed yet</p>
+                    <p className="mt-1 text-xs text-zinc-500">
+                      Add a repository to see the timeline populate.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3 pl-14">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-[#f3cf8b]/20 bg-[#f3cf8b]/10 text-[#f3cf8b]">
+                      <GitBranch className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <div className="text-[10px] font-mono uppercase tracking-[0.24em] text-zinc-500">
+                        Timeline
+                      </div>
+                      <div className="text-sm text-zinc-300">
+                        A lighter commit-first view that keeps the same selection panel.
+                      </div>
+                    </div>
+                  </div>
+
+                  {visibleCommits.map((commit, index) => {
+                    const commitColor = COMMIT_COLORS[index % COMMIT_COLORS.length]
+                    const fileCount = commit.files.length
+                    const visibleFiles = commit.files.slice(0, 5)
+
+                    return (
+                      <div key={commit.id} className="relative pl-14">
+                        <div className="absolute left-5 top-6 h-4 w-4 rounded-full border border-white/10 bg-zinc-950 shadow-[0_0_0_4px_rgba(255,255,255,0.02)]" style={{ boxShadow: `0 0 0 4px rgba(255,255,255,0.02), 0 0 0 1px ${commitColor}44` }} />
+                        <div
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => setSelectedSelection({ id: commit.id, type: "commit" })}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault()
+                              setSelectedSelection({ id: commit.id, type: "commit" })
+                            }
+                          }}
+                          className={`w-full rounded-[1.35rem] border p-4 text-left transition-all cursor-pointer ${
+                            selectedSelection?.id === commit.id
+                              ? "border-white/15 bg-white/[0.06] shadow-[0_18px_40px_rgba(0,0,0,0.24)]"
+                              : "border-white/8 bg-white/[0.03] hover:border-white/12 hover:bg-white/[0.05]"
+                          }`}
+                        >
+                          <div className="flex flex-wrap items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span
+                                  className="rounded-full border px-2.5 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.18em]"
+                                  style={{
+                                    borderColor: `${commitColor}44`,
+                                    background: `${commitColor}18`,
+                                    color: commitColor,
+                                  }}
+                                >
+                                  {commit.sha.slice(0, 7)}
+                                </span>
+                                <span className="rounded-full border border-white/8 bg-white/5 px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.18em] text-zinc-400">
+                                  {fileCount} files
+                                </span>
+                              </div>
+                              <p
+                                className="mt-3 text-sm leading-6 text-zinc-200"
+                                style={{
+                                  display: "-webkit-box",
+                                  WebkitLineClamp: 2,
+                                  WebkitBoxOrient: "vertical",
+                                  overflow: "hidden",
+                                }}
+                              >
+                                {commit.message}
+                              </p>
+                            </div>
+
+                            <div className="text-right text-[11px] text-zinc-500">
+                              <div>{commit.authorName ?? "Unknown author"}</div>
+                              <div className="mt-1">
+                                {new Date(commit.committedAt).toLocaleDateString(undefined, {
+                                  month: "short",
+                                  day: "numeric",
+                                  year: "numeric",
+                                })}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="mt-4 flex flex-wrap gap-2">
+                            {visibleFiles.map((file) => {
+                              const status = getFileStatus(file.status)
+                              return (
+                                <button
+                                  key={file.id}
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    setSelectedSelection({ id: `file-${file.id}`, type: "file" })
+                                  }}
+                                  className="inline-flex items-center gap-2 rounded-full border border-white/8 bg-zinc-950/40 px-3 py-1.5 text-left text-[11px] text-zinc-300 transition-colors hover:bg-zinc-900/70"
+                                >
+                                  <span className="h-2 w-2 rounded-full" style={{ background: status.fill }} />
+                                  <span className="max-w-[14rem] truncate">{file.filePath}</span>
+                                </button>
+                              )
+                            })}
+                            {fileCount > visibleFiles.length && (
+                              <span className="inline-flex items-center rounded-full border border-white/8 bg-white/5 px-3 py-1.5 text-[11px] text-zinc-500">
+                                +{fileCount - visibleFiles.length} more
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
             </div>
           </div>
         )}
